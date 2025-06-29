@@ -80,14 +80,14 @@ function PersonaEditorForm({
             placeholder="e.g., Code Reviewer"
           />
         </div>
-        <div className="space-y-2 flex-1 flex flex-col min-h-[200px]">
+        <div className="space-y-2 flex-1 flex flex-col">
           <Label htmlFor="persona-prompt">System Prompt</Label>
           <Textarea
             id="persona-prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="You are a helpful AI assistant that..."
-            className="flex-1 resize-none"
+            className="flex-1 resize-none min-h-[240px]"
           />
         </div>
       </div>
@@ -181,6 +181,7 @@ export function PersonaHub({
     }
     setView("list");
     setEditingPersona(null);
+    onOpenChange(false);
   };
 
   React.useEffect(() => {
@@ -220,7 +221,7 @@ export function PersonaHub({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, view, hoveredPersonaId]);
+  }, [isOpen, view, hoveredPersonaId, handleSelect, handleEdit, handleDelete]);
 
   const Keybind = ({ children }: { children: React.ReactNode }) => (
     <kbd className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground font-sans">

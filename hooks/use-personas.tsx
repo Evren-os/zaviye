@@ -1,6 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  createContext,
+  useContext,
+  type PropsWithChildren,
+  type ElementType,
+} from "react";
 import type { Persona } from "@/lib/types";
 import { systemPrompts } from "@/lib/system-prompts";
 import { ZapIcon, GitBranchIcon, VolumeXIcon, User } from "lucide-react";
@@ -46,7 +55,19 @@ const DEFAULT_PERSONAS: Persona[] = [
   },
 ];
 
-export function usePersonas() {
+interface PersonasContextType {
+  getPersona: (id: string) => Persona | undefined;
+  getAllPersonas: () => Persona[];
+  createPersona: (data: { name: string; prompt: string }) => string;
+  updatePersona: (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => void;
+  deletePersona: (id: string) => void;
+  selectPersona: (id: string) => void;
+  resetPersonaToDefault: (id: string) => void;
+}
+
+const PersonasContext = createContext<PersonasContextType | null>(null);
+
+export function PersonasProvider({ children }: PropsWithChildren) {
   const [customPersonas, setCustomPersonas] = useState<Persona[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -55,7 +76,6 @@ export function usePersonas() {
     try {
       const saved = localStorage.getItem(CUSTOM_PERSONAS_STORAGE_KEY);
       if (saved) {
-        // Ensure icon is not stored, it will be re-assigned
         const parsed = (JSON.parse(saved) as Persona[]).map((p) => ({ ...p, icon: User }));
         setCustomPersonas(parsed);
       }
@@ -83,7 +103,6 @@ export function usePersonas() {
     const merged = DEFAULT_PERSONAS.map((defaultPersona) => {
       const customOverride = customMap.get(defaultPersona.id);
       if (customOverride) {
-        // Merge custom overrides onto the default persona
         return {
           ...defaultPersona,
           name: customOverride.name || defaultPersona.name,
@@ -111,7 +130,33 @@ export function usePersonas() {
     return [...personas].sort((a, b) => (b.lastUsed ?? 0) - (a.lastUsed ?? 0));
   }, [personas]);
 
-  const createPersona = (data: { name: string; prompt: string }): string => {
+  const updatePersona = useCallback(
+    (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => {
+      setCustomPersonas((prev) => {
+        const existing = prev.find((p) => p.id === id);
+        if (existing) {
+          return prev.map((p) => (p.id === id ? { ...p, ...data } : p));
+        }
+        const defaultPersona = DEFAULT_PERSONAS.find((p) => p.id === id);
+        if (defaultPersona) {
+          const newOverride: Persona = {
+            id,
+            name: data.name ?? defaultPersona.name,
+            prompt: data.prompt ?? defaultPersona.prompt,
+            placeholder: data.placeholder,
+            isDefault: true,
+            icon: User,
+            lastUsed: data.lastUsed,
+          };
+          return [...prev, newOverride];
+        }
+        return prev;
+      });
+    },
+    [],
+  );
+
+  const createPersona = useCallback((data: { name: string; prompt: string }): string => {
     const newId = crypto.randomUUID();
     const newPersona: Persona = {
       ...data,
@@ -122,57 +167,55 @@ export function usePersonas() {
     };
     setCustomPersonas((prev) => [...prev, newPersona]);
     return newId;
-  };
+  }, []);
 
-  const updatePersona = (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => {
-    setCustomPersonas((prev) => {
-      const existing = prev.find((p) => p.id === id);
-      if (existing) {
-        return prev.map((p) => (p.id === id ? { ...p, ...data } : p));
-      }
-      const defaultPersona = DEFAULT_PERSONAS.find((p) => p.id === id);
-      if (defaultPersona) {
-        const newOverride: Persona = {
-          id,
-          name: data.name ?? defaultPersona.name,
-          prompt: data.prompt ?? defaultPersona.prompt,
-          placeholder: data.placeholder,
-          isDefault: true,
-          icon: User,
-          lastUsed: data.lastUsed,
-        };
-        return [...prev, newOverride];
-      }
-      return prev;
-    });
-  };
-
-  const deletePersona = (id: string) => {
+  const deletePersona = useCallback((id: string) => {
     setCustomPersonas((prev) => prev.filter((p) => p.id !== id && !p.isDefault));
-  };
+  }, []);
 
-  const selectPersona = (id: string) => {
-    const persona = getPersona(id);
-    if (!persona) return;
+  const selectPersona = useCallback(
+    (id: string) => {
+      const persona = getPersona(id);
+      if (!persona) return;
+      updatePersona(id, { lastUsed: Date.now() });
+    },
+    [getPersona, updatePersona],
+  );
 
-    // Update lastUsed timestamp
-    updatePersona(id, { lastUsed: Date.now() });
-  };
-
-  const resetPersonaToDefault = (id: string) => {
+  const resetPersonaToDefault = useCallback((id: string) => {
     const isDefault = DEFAULT_PERSONAS.some((p) => p.id === id);
-    if (!isDefault) return; // Can't reset a non-default persona
-
+    if (!isDefault) return;
     setCustomPersonas((prev) => prev.filter((p) => p.id !== id));
-  };
+  }, []);
 
-  return {
-    getPersona,
-    getAllPersonas,
-    createPersona,
-    updatePersona,
-    deletePersona,
-    selectPersona,
-    resetPersonaToDefault,
-  };
+  const contextValue = useMemo(
+    () => ({
+      getPersona,
+      getAllPersonas,
+      createPersona,
+      updatePersona,
+      deletePersona,
+      selectPersona,
+      resetPersonaToDefault,
+    }),
+    [
+      getPersona,
+      getAllPersonas,
+      createPersona,
+      updatePersona,
+      deletePersona,
+      selectPersona,
+      resetPersonaToDefault,
+    ],
+  );
+
+  return <PersonasContext.Provider value={contextValue}>{children}</PersonasContext.Provider>;
+}
+
+export function usePersonas() {
+  const context = useContext(PersonasContext);
+  if (!context) {
+    throw new Error("usePersonas must be used within a PersonasProvider");
+  }
+  return context;
 }

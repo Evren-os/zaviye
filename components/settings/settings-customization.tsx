@@ -48,7 +48,7 @@ export function SettingsCustomization({
           value={systemPrompt}
           onChange={(e) => onSystemPromptChangeAction(e.target.value)}
           placeholder="System prompt for the AI..."
-          className="flex-1 resize-none text-xs font-mono"
+          className="flex-1 resize-none text-xs font-mono min-h-[240px]"
         />
       </div>
     </div>
