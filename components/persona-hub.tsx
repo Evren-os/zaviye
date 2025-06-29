@@ -236,7 +236,7 @@ export function PersonaHub({
           <DialogContent
             showCloseButton={isMobile}
             className={cn(
-              "p-0 shadow-lg overflow-hidden flex flex-col",
+              "p-0 shadow-lg overflow-hidden flex flex-col bg-popover",
               isMobile
                 ? "h-dvh w-screen max-h-dvh max-w-full rounded-none border-none"
                 : "w-[95vw] max-w-[640px] h-[70vh] max-h-[550px] rounded-lg",
