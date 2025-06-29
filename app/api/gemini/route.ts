@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         parts: [{ text: systemPrompt }],
       },
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.3,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 2048,
