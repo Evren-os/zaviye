@@ -18,15 +18,8 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceProps) {
-  const {
-    messages,
-    isLoading,
-    sendMessage,
-    regenerateLastResponse,
-    hasStartedChat,
-    clearChatHistory,
-    stopGeneration,
-  } = useChat(activeChat);
+  const { messages, isLoading, sendMessage, regenerateLastResponse, stopGeneration } =
+    useChat(activeChat);
 
   const { messagesContainerRef, isAtBottom, scrollToBottom } = useAutoScroll({
     messages,
@@ -38,12 +31,7 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
 
   return (
     <>
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onCloseAction={() => setIsSettingsOpen(false)}
-        activeChat={activeChat}
-        clearChatHistoryAction={clearChatHistory}
-      />
+      <SettingsModal isOpen={isSettingsOpen} onCloseAction={() => setIsSettingsOpen(false)} />
 
       <PersonaHub
         isOpen={isHubOpen}
@@ -85,9 +73,10 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
             <ChatMessages
               messages={messages}
               isLoading={isLoading}
-              hasStartedChat={hasStartedChat}
+              hasStartedChat={messages.length > 0}
               activeChat={activeChat}
               onRegenerateAction={regenerateLastResponse}
+              onSendDemoPrompt={sendMessage}
             />
             <div className="h-4 flex-shrink-0" />
           </div>

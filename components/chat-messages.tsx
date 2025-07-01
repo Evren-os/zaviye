@@ -18,6 +18,7 @@ interface ChatMessagesProps {
   hasStartedChat: boolean;
   activeChat: ChatType;
   onRegenerateAction: () => void;
+  onSendDemoPrompt: (prompt: string) => void;
 }
 
 // A simple parser to split text and code blocks
@@ -34,12 +35,84 @@ const parseMessageContent = (content: string) => {
     .filter((part) => part.content.length > 0);
 };
 
+const IntroScreen = ({
+  persona,
+  onSendDemoPrompt,
+}: {
+  persona: ReturnType<typeof usePersonas>["getPersona"];
+  onSendDemoPrompt: (prompt: string) => void;
+}) => {
+  if (!persona) return null;
+
+  const hasIntro = persona.isDefault && persona.introMessage;
+  const hasDemos = persona.demoPrompts && persona.demoPrompts.length > 0;
+
+  return (
+    <div className="flex items-center justify-center flex-1">
+      <div className="max-w-md w-full text-center space-y-5 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+        {hasIntro && (
+          <div className="bg-muted/30 backdrop-blur-sm rounded-xl p-4 sm:p-5 border">
+            <h3 className="text-lg font-semibold mb-2 text-foreground">{persona.name}</h3>
+            <p className="text-muted-foreground leading-relaxed text-sm mb-3">
+              {persona.introMessage}
+            </p>
+            <Collapsible>
+              <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
+                <div className="pt-2">
+                  <p className="text-muted-foreground/80 text-xs leading-relaxed bg-background/50 p-3 rounded-lg border">
+                    {persona.description}
+                  </p>
+                </div>
+              </CollapsibleContent>
+              <div className="mt-3">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="link"
+                    className="text-primary/80 hover:text-primary text-xs p-0 h-auto data-[state=open]:hidden"
+                  >
+                    Learn more
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+            </Collapsible>
+          </div>
+        )}
+
+        {hasDemos && (
+          <div className="space-y-3">
+            {!hasIntro && (
+              <h4 className="text-sm font-medium text-muted-foreground">Try these examples:</h4>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+              {persona.demoPrompts?.map((prompt, i) => (
+                <Button
+                  key={i}
+                  variant="outline"
+                  className="h-auto whitespace-normal py-2 px-3 justify-start text-muted-foreground hover:text-foreground"
+                  onClick={() => onSendDemoPrompt(prompt)}
+                >
+                  {prompt}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!hasIntro && !hasDemos && (
+          <p className="text-center text-muted-foreground text-sm">Start a conversation...</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export function ChatMessages({
   messages,
   isLoading,
   hasStartedChat,
   activeChat,
   onRegenerateAction,
+  onSendDemoPrompt,
 }: ChatMessagesProps) {
   const [activeToolbarId, setActiveToolbarId] = useState<string | null>(null);
   const isMobile = useIsMobile();
@@ -69,45 +142,12 @@ export function ChatMessages({
     }
   };
 
-  const shouldShowIntro =
-    !hasStartedChat && !isLoading && persona?.isDefault && persona.introMessage;
+  const shouldShowIntroScreen = messages.length === 0 && !isLoading;
 
   return (
     <div className="flex flex-col h-full" onClick={handleContainerClick}>
-      {shouldShowIntro ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="max-w-md text-center space-y-5 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-            <div className="bg-muted/30 backdrop-blur-sm rounded-xl p-4 sm:p-5 border">
-              <h3 className="text-lg font-semibold mb-2 text-foreground">{persona.name}</h3>
-              <p className="text-muted-foreground leading-relaxed text-sm mb-3">
-                {persona.introMessage}
-              </p>
-              <Collapsible>
-                <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
-                  <div className="pt-2">
-                    <p className="text-muted-foreground/80 text-xs leading-relaxed bg-background/50 p-3 rounded-lg border">
-                      {persona.description}
-                    </p>
-                  </div>
-                </CollapsibleContent>
-                <div className="mt-3">
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="link"
-                      className="text-primary/80 hover:text-primary text-xs p-0 h-auto data-[state=open]:hidden"
-                    >
-                      Learn more
-                    </Button>
-                  </CollapsibleTrigger>
-                </div>
-              </Collapsible>
-            </div>
-          </div>
-        </div>
-      ) : messages.length === 0 && !isLoading ? (
-        <div className="flex items-center justify-center flex-1">
-          <p className="text-center text-muted-foreground text-sm">Start a conversation...</p>
-        </div>
+      {shouldShowIntroScreen ? (
+        <IntroScreen persona={persona} onSendDemoPrompt={onSendDemoPrompt} />
       ) : (
         <div className="space-y-3 py-4">
           {messages.map((message, index) => {

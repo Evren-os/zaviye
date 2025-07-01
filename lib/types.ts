@@ -23,4 +23,5 @@ export interface Persona {
   introMessage?: string;
   description?: string;
   lastUsed?: number;
+  demoPrompts?: string[];
 }
