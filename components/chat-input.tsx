@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { usePersonas } from "@/hooks/use-personas";
 import type { ChatType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ChevronDown, SendIcon, SquareIcon } from "lucide-react";
+import { ChevronDown, SendIcon, SquareIcon, TimerIcon } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -16,6 +16,7 @@ interface ChatInputProps {
   activeChat: ChatType;
   onOpenHubAction: () => void;
   stopGeneration: () => void;
+  throttleSeconds: number;
 }
 
 const MIN_TEXTAREA_HEIGHT = 80;
@@ -27,6 +28,7 @@ export function ChatInput({
   activeChat,
   onOpenHubAction,
   stopGeneration,
+  throttleSeconds,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -34,6 +36,7 @@ export function ChatInput({
   const { getPersona } = usePersonas();
   const persona = getPersona(activeChat);
   const Icon = persona?.icon;
+  const isThrottled = throttleSeconds > 0;
 
   // Reset input when chat type changes
   useEffect(() => {
@@ -52,7 +55,7 @@ export function ChatInput({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
+    if (input.trim() && !isLoading && !isThrottled) {
       onSendAction(input.trim());
       setInput("");
       if (textareaRef.current) {
@@ -64,7 +67,7 @@ export function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (!isLoading) {
+      if (!isLoading && !isThrottled) {
         handleSubmit(e);
       }
     }
@@ -106,44 +109,54 @@ export function ChatInput({
               <ChevronDown className="h-4 w-4 opacity-70" />
             </Button>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type={isLoading ? "button" : "submit"}
-                  size="icon"
-                  onClick={isLoading ? stopGeneration : undefined}
-                  disabled={!input.trim() && !isLoading}
-                  className={cn(
-                    "rounded-lg h-8 w-8 transition-colors duration-200",
-                    isLoading && "bg-primary hover:bg-primary/90",
-                  )}
-                  aria-label={isLoading ? "Stop generating" : "Send message"}
-                >
-                  <div className="relative h-4 w-4 flex items-center justify-center overflow-hidden">
-                    <SquareIcon
-                      className={cn(
-                        "absolute transition-all duration-300 ease-in-out",
-                        isLoading
-                          ? "opacity-100 scale-100"
-                          : "opacity-0 -translate-y-full scale-50",
-                      )}
-                      fill="currentColor"
-                    />
-                    <SendIcon
-                      className={cn(
-                        "absolute transition-all duration-300 ease-in-out",
-                        isLoading ? "opacity-0 translate-y-full scale-50" : "opacity-100 scale-100",
-                      )}
-                    />
-                  </div>
-                </Button>
-              </TooltipTrigger>
-              {isLoading && (
-                <TooltipContent>
-                  <p>Stop generating</p>
-                </TooltipContent>
+            <div className="flex items-center gap-2">
+              {isThrottled && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <TimerIcon className="h-4 w-4 animate-pulse" />
+                  <span>Wait {throttleSeconds}s</span>
+                </div>
               )}
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type={isLoading ? "button" : "submit"}
+                    size="icon"
+                    onClick={isLoading ? stopGeneration : undefined}
+                    disabled={(!input.trim() && !isLoading) || isThrottled}
+                    className={cn(
+                      "rounded-lg h-8 w-8 transition-colors duration-200",
+                      isLoading && "bg-primary hover:bg-primary/90",
+                    )}
+                    aria-label={isLoading ? "Stop generating" : "Send message"}
+                  >
+                    <div className="relative h-4 w-4 flex items-center justify-center overflow-hidden">
+                      <SquareIcon
+                        className={cn(
+                          "absolute transition-all duration-300 ease-in-out",
+                          isLoading && !isThrottled
+                            ? "opacity-100 scale-100"
+                            : "opacity-0 -translate-y-full scale-50",
+                        )}
+                        fill="currentColor"
+                      />
+                      <SendIcon
+                        className={cn(
+                          "absolute transition-all duration-300 ease-in-out",
+                          isLoading || isThrottled
+                            ? "opacity-0 translate-y-full scale-50"
+                            : "opacity-100 scale-100",
+                        )}
+                      />
+                    </div>
+                  </Button>
+                </TooltipTrigger>
+                {isLoading && !isThrottled && (
+                  <TooltipContent>
+                    <p>Stop generating</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </div>
           </div>
         </form>
       </div>

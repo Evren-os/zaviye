@@ -14,6 +14,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { usePersonas } from "@/hooks/use-personas";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MODELS } from "@/lib/models";
+import type { ModelId } from "@/lib/types";
 
 interface SettingsGlobalProps {
   onCloseAction: () => void;
@@ -39,16 +48,16 @@ const SettingItem = ({
 
 export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const { getAllPersonas } = usePersonas();
+  const { getAllPersonas, getRawCustomPersonas, globalModel, setGlobalModel } = usePersonas();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportAllData = () => {
     try {
-      const personas = getAllPersonas();
-      const customPersonas = personas.filter((p) => !p.isDefault);
+      const allPersonas = getAllPersonas();
+      const customPersonasToExport = getRawCustomPersonas(); // This is the fix
       const histories: Record<string, any> = {};
 
-      personas.forEach((persona) => {
+      allPersonas.forEach((persona) => {
         const history = localStorage.getItem(`zaviye-${persona.id}-messages`);
         if (history) {
           histories[persona.id] = JSON.parse(history);
@@ -56,7 +65,8 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
       });
 
       const dataToExport = {
-        personas: customPersonas.map(({ icon, ...rest }) => rest), // Don't export icon
+        globalModel,
+        personas: customPersonasToExport.map(({ icon, ...rest }) => rest), // Export raw custom data
         histories,
       };
 
@@ -102,6 +112,11 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
         const data = JSON.parse(text);
         if (!data.personas || !data.histories) {
           throw new Error("Invalid backup file format.");
+        }
+
+        // Import global model if it exists
+        if (data.globalModel) {
+          localStorage.setItem("zaviye-global-model", data.globalModel);
         }
 
         // Import personas
@@ -155,7 +170,27 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
 
   return (
     <>
-      <div className="p-6 space-y-0">
+      <div className="p-6 space-y-6">
+        <div className="border rounded-lg">
+          <SettingItem
+            title="Global AI Model"
+            description="Set the default AI model for all personas. This can be overridden per-persona."
+            control={
+              <Select value={globalModel} onValueChange={(v) => setGlobalModel(v as ModelId)}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODELS.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
+        </div>
         <div className="border rounded-lg">
           <SettingItem
             title="Export All Zaviye Data"

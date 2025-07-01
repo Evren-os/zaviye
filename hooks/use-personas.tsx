@@ -10,11 +10,12 @@ import {
   type PropsWithChildren,
   type ElementType,
 } from "react";
-import type { Persona } from "@/lib/types";
+import type { Persona, ModelId } from "@/lib/types";
 import { systemPrompts } from "@/lib/system-prompts";
 import { ZapIcon, GitBranchIcon, VolumeXIcon, User } from "lucide-react";
 
 const CUSTOM_PERSONAS_STORAGE_KEY = "zaviye-custom-personas";
+const GLOBAL_MODEL_STORAGE_KEY = "zaviye-global-model";
 
 const DEFAULT_PERSONAS: Persona[] = [
   {
@@ -71,29 +72,37 @@ const DEFAULT_PERSONAS: Persona[] = [
 interface PersonasContextType {
   getPersona: (id: string) => Persona | undefined;
   getAllPersonas: () => Persona[];
+  getRawCustomPersonas: () => Persona[]; // New function to get user's raw data
   createPersona: (data: { name: string; prompt: string }) => string;
   updatePersona: (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => void;
   deletePersona: (id: string) => void;
   selectPersona: (id: string) => void;
   resetPersonaToDefault: (id: string) => void;
+  globalModel: ModelId;
+  setGlobalModel: (modelId: ModelId) => void;
 }
 
 const PersonasContext = createContext<PersonasContextType | null>(null);
 
 export function PersonasProvider({ children }: PropsWithChildren) {
   const [customPersonas, setCustomPersonas] = useState<Persona[]>([]);
+  const [globalModel, setGlobalModel] = useState<ModelId>("gemini-2.5-flash");
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     try {
-      const saved = localStorage.getItem(CUSTOM_PERSONAS_STORAGE_KEY);
-      if (saved) {
-        const parsed = (JSON.parse(saved) as Persona[]).map((p) => ({ ...p, icon: User }));
+      const savedPersonas = localStorage.getItem(CUSTOM_PERSONAS_STORAGE_KEY);
+      if (savedPersonas) {
+        const parsed = (JSON.parse(savedPersonas) as Persona[]).map((p) => ({ ...p, icon: User }));
         setCustomPersonas(parsed);
       }
+      const savedModel = localStorage.getItem(GLOBAL_MODEL_STORAGE_KEY);
+      if (savedModel) {
+        setGlobalModel(savedModel as ModelId);
+      }
     } catch (error) {
-      console.error("Failed to load custom personas from localStorage:", error);
+      console.error("Failed to load state from localStorage:", error);
     }
   }, []);
 
@@ -102,10 +111,11 @@ export function PersonasProvider({ children }: PropsWithChildren) {
     try {
       const toSave = customPersonas.map(({ icon, ...rest }) => rest);
       localStorage.setItem(CUSTOM_PERSONAS_STORAGE_KEY, JSON.stringify(toSave));
+      localStorage.setItem(GLOBAL_MODEL_STORAGE_KEY, globalModel);
     } catch (error) {
-      console.error("Failed to save custom personas to localStorage:", error);
+      console.error("Failed to save state to localStorage:", error);
     }
-  }, [customPersonas, isMounted]);
+  }, [customPersonas, globalModel, isMounted]);
 
   const personas = useMemo<Persona[]>(() => {
     if (!isMounted) return DEFAULT_PERSONAS;
@@ -122,6 +132,7 @@ export function PersonasProvider({ children }: PropsWithChildren) {
           prompt: customOverride.prompt || defaultPersona.prompt,
           placeholder: customOverride.placeholder || defaultPersona.placeholder,
           lastUsed: customOverride.lastUsed,
+          model: customOverride.model,
         };
       }
       return defaultPersona;
@@ -143,6 +154,10 @@ export function PersonasProvider({ children }: PropsWithChildren) {
     return [...personas].sort((a, b) => (b.lastUsed ?? 0) - (a.lastUsed ?? 0));
   }, [personas]);
 
+  const getRawCustomPersonas = useCallback((): Persona[] => {
+    return customPersonas;
+  }, [customPersonas]);
+
   const updatePersona = useCallback(
     (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => {
       setCustomPersonas((prev) => {
@@ -160,6 +175,7 @@ export function PersonasProvider({ children }: PropsWithChildren) {
             isDefault: true,
             icon: User,
             lastUsed: data.lastUsed,
+            model: data.model,
           };
           return [...prev, newOverride];
         }
@@ -205,20 +221,25 @@ export function PersonasProvider({ children }: PropsWithChildren) {
     () => ({
       getPersona,
       getAllPersonas,
+      getRawCustomPersonas,
       createPersona,
       updatePersona,
       deletePersona,
       selectPersona,
       resetPersonaToDefault,
+      globalModel,
+      setGlobalModel,
     }),
     [
       getPersona,
       getAllPersonas,
+      getRawCustomPersonas,
       createPersona,
       updatePersona,
       deletePersona,
       selectPersona,
       resetPersonaToDefault,
+      globalModel,
     ],
   );
 

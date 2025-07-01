@@ -18,8 +18,14 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceProps) {
-  const { messages, isLoading, sendMessage, regenerateLastResponse, stopGeneration } =
-    useChat(activeChat);
+  const {
+    messages,
+    isLoading,
+    sendMessage,
+    regenerateLastResponse,
+    stopGeneration,
+    throttleSeconds,
+  } = useChat(activeChat);
 
   const { messagesContainerRef, isAtBottom, scrollToBottom } = useAutoScroll({
     messages,
@@ -109,6 +115,7 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
               activeChat={activeChat}
               onOpenHubAction={() => setIsHubOpen(true)}
               stopGeneration={stopGeneration}
+              throttleSeconds={throttleSeconds}
             />
           </div>
         </div>

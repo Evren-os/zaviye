@@ -26,16 +26,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePersonas } from "@/hooks/use-personas";
 import { ArrowLeft, ArrowUpRight, FilePenLine, PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Persona } from "@/lib/types";
+import type { Persona, ModelId } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Badge } from "./ui/badge";
+import { getModelById, MODELS } from "@/lib/models";
 
 interface PersonaHubProps {
   isOpen: boolean;
@@ -109,8 +118,15 @@ export function PersonaHub({
   onSelectPersona,
   activeChatId,
 }: PersonaHubProps) {
-  const { getAllPersonas, selectPersona, deletePersona, createPersona, updatePersona, getPersona } =
-    usePersonas();
+  const {
+    getAllPersonas,
+    selectPersona,
+    deletePersona,
+    createPersona,
+    updatePersona,
+    getPersona,
+    globalModel,
+  } = usePersonas();
   const isMobile = useIsMobile();
 
   const [view, setView] = React.useState<"list" | "edit">("list");
@@ -158,7 +174,6 @@ export function PersonaHub({
       setIsAlertOpen(false);
       setPersonaToDelete(null);
       if (isDeletingActive) {
-        // If the active persona was deleted, fall back to the default
         onSelectPersona("glitch");
       }
     }
@@ -228,17 +243,62 @@ export function PersonaHub({
                   <CommandGroup heading="Today">
                     {personas.map((persona) => {
                       const Icon = persona.icon;
+                      const effectiveModelId = persona.model || globalModel;
+                      const model = getModelById(effectiveModelId);
+                      const isOverride = !!persona.model;
+
                       return (
                         <CommandItem
                           key={persona.id}
                           value={persona.name}
                           onSelect={() => handleSelect(persona.id)}
-                          className="group h-[52px]"
+                          className="group py-3 h-auto"
                           data-cmdk-item-id={persona.id}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 w-full">
                             <Icon />
-                            <span>{persona.name}</span>
+                            <div className="flex flex-col">
+                              <span>{persona.name}</span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Badge
+                                    variant={isOverride ? "default" : "secondary"}
+                                    className="cursor-pointer w-fit mt-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {isOverride
+                                      ? model?.name
+                                      : `Default: ${getModelById(globalModel)?.name}`}
+                                  </Badge>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="start"
+                                  className="border border-border/50"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {MODELS.map((m) => (
+                                    <DropdownMenuItem
+                                      key={m.id}
+                                      onSelect={() => updatePersona(persona.id, { model: m.id })}
+                                    >
+                                      {m.name}
+                                    </DropdownMenuItem>
+                                  ))}
+                                  {isOverride && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onSelect={() =>
+                                          updatePersona(persona.id, { model: undefined })
+                                        }
+                                      >
+                                        Reset to Global Default
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                           <div className="ml-auto hidden items-center gap-2 group-hover:flex group-aria-selected:flex">
                             <Tooltip>

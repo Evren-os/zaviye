@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // In-memory store for rate limiting. Resets on cold starts.
 const rateLimitStore = new Map<string, { count: number; lastRequest: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 4; // Max 4 requests per minute from a single IP
+const RATE_LIMIT_MAX_REQUESTS = 15;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 // Periodically clean up old entries from the rate limit store
@@ -17,12 +17,12 @@ setInterval(() => {
 }, CLEANUP_INTERVAL_MS);
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
-const MODEL_NAME = "gemini-2.5-flash";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+const DEFAULT_MODEL_NAME = "gemini-2.5-flash";
 
 interface GeminiRequestBody {
   systemPrompt: string;
   userPrompt: string;
+  modelName?: string;
 }
 
 interface GeminiApiResponse {
@@ -46,7 +46,9 @@ export async function POST(request: NextRequest) {
 
   if (record && now - record.lastRequest < RATE_LIMIT_WINDOW_MS) {
     if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
-      console.warn(`RATE_LIMIT: IP ${ip} blocked for exceeding ${RATE_LIMIT_MAX_REQUESTS} requests/min.`);
+      console.warn(
+        `RATE_LIMIT: IP ${ip} blocked for exceeding ${RATE_LIMIT_MAX_REQUESTS} requests/min.`,
+      );
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
         { status: 429 },
@@ -60,14 +62,14 @@ export async function POST(request: NextRequest) {
 
   if (!API_KEY) {
     console.error("CRITICAL: GEMINI_API_KEY environment variable is not set.");
-    return NextResponse.json(
-      { error: "Server configuration error." },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Server configuration error." }, { status: 500 });
   }
 
   try {
-    const { systemPrompt, userPrompt }: GeminiRequestBody = await request.json();
+    const { systemPrompt, userPrompt, modelName }: GeminiRequestBody = await request.json();
+
+    const effectiveModelName = modelName || DEFAULT_MODEL_NAME;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${effectiveModelName}:generateContent?key=${API_KEY}`;
 
     const requestBody = {
       contents: [

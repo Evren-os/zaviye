@@ -1,12 +1,16 @@
+import type { ModelId } from "./types";
+
 export interface GenerateContentParams {
   systemPrompt: string;
   userPrompt: string;
+  modelName: ModelId;
   signal?: AbortSignal;
 }
 
 export async function generateContent({
   systemPrompt,
   userPrompt,
+  modelName,
   signal,
 }: GenerateContentParams): Promise<string> {
   try {
@@ -15,7 +19,7 @@ export async function generateContent({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ systemPrompt, userPrompt }),
+      body: JSON.stringify({ systemPrompt, userPrompt, modelName }),
       signal, // Pass the signal to the fetch request
     });
 
@@ -24,7 +28,7 @@ export async function generateContent({
       const errorMessage = errorData.error || `API Error: Status ${response.status}`;
 
       if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again in a moment.");
+        throw new Error("API rate limit hit. Try a different model or wait a moment.");
       }
       if (response.status >= 500) {
         throw new Error("A server error occurred. Please try again later.");

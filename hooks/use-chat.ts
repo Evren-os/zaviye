@@ -2,7 +2,8 @@
 
 import { usePersonas } from "@/hooks/use-personas";
 import { generateContent } from "@/lib/gemini";
-import type { ChatType, Message } from "@/lib/types";
+import { getModelById } from "@/lib/models";
+import type { ChatType, Message, ModelId } from "@/lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,8 +15,13 @@ export function useChat(chatType: ChatType) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasStartedChat, setHasStartedChat] = useState(false);
-  const { getPersona } = usePersonas();
+  const { getPersona, globalModel } = usePersonas();
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // New state for rate limiting
+  const [requestTimestamps, setRequestTimestamps] = useState<Record<string, number[]>>({});
+  const [throttleSeconds, setThrottleSeconds] = useState(0);
+  const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     try {
@@ -50,6 +56,17 @@ export function useChat(chatType: ChatType) {
     }
   }, [hasStartedChat, chatType]);
 
+  // Cleanup throttle timer on component unmount or chat switch
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) {
+        clearInterval(throttleTimerRef.current);
+        throttleTimerRef.current = null;
+      }
+      setThrottleSeconds(0);
+    };
+  }, [chatType]);
+
   const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -57,8 +74,51 @@ export function useChat(chatType: ChatType) {
     }
   }, []);
 
+  const checkAndApplyThrottle = useCallback(
+    (modelId: ModelId): boolean => {
+      const model = getModelById(modelId);
+      if (!model) {
+        toast.error("Invalid AI model selected.");
+        return true; // Is throttled
+      }
+
+      const now = Date.now();
+      const oneMinuteAgo = now - 60 * 1000;
+
+      const recentTimestamps = (requestTimestamps[modelId] || []).filter((ts) => ts > oneMinuteAgo);
+
+      if (recentTimestamps.length >= model.rpm) {
+        const oldestRequestTime = recentTimestamps[0];
+        const timeToWait = Math.ceil((60 * 1000 - (now - oldestRequestTime)) / 1000);
+        setThrottleSeconds(timeToWait);
+
+        if (throttleTimerRef.current) clearInterval(throttleTimerRef.current);
+        throttleTimerRef.current = setInterval(() => {
+          setThrottleSeconds((prev) => {
+            if (prev <= 1) {
+              if (throttleTimerRef.current) clearInterval(throttleTimerRef.current);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        toast.warning(`Rate limit reached. Please wait ${timeToWait} seconds.`, { duration: 2000 });
+        return true; // Is throttled
+      }
+
+      setRequestTimestamps((prev) => ({
+        ...prev,
+        [modelId]: [...recentTimestamps, now],
+      }));
+
+      return false; // Not throttled
+    },
+    [requestTimestamps],
+  );
+
   const fetchAssistantResponse = useCallback(
-    async (userPrompt: string) => {
+    async (userPrompt: string, modelName: ModelId) => {
       if (isLoading) stopGeneration();
       setIsLoading(true);
       abortControllerRef.current = new AbortController();
@@ -73,6 +133,7 @@ export function useChat(chatType: ChatType) {
         const response = await generateContent({
           systemPrompt,
           userPrompt,
+          modelName,
           signal: abortControllerRef.current.signal,
         });
         const assistantMessage: Message = {
@@ -94,7 +155,12 @@ export function useChat(chatType: ChatType) {
   );
 
   const sendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim() || throttleSeconds > 0) return;
+
+    const persona = getPersona(chatType);
+    const effectiveModelId = persona?.model || globalModel;
+    if (checkAndApplyThrottle(effectiveModelId)) return;
+
     if (!hasStartedChat) setHasStartedChat(true);
 
     const userMessage: Message = {
@@ -106,37 +172,48 @@ export function useChat(chatType: ChatType) {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      await fetchAssistantResponse(content);
+      await fetchAssistantResponse(content, effectiveModelId);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         return;
       }
       if (error instanceof Error) {
-        toast.error(error.message, { duration: 2500 });
+        toast.error(error.message, {
+          duration: 3500,
+          description: "Consider switching to a different model if this persists.",
+        });
       }
       setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
     }
   };
 
   const regenerateLastResponse = async () => {
+    if (throttleSeconds > 0) return;
     const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
     if (!lastUserMessage) {
       toast.error("Could not find a message to regenerate.");
       return;
     }
 
+    const persona = getPersona(chatType);
+    const effectiveModelId = persona?.model || globalModel;
+    if (checkAndApplyThrottle(effectiveModelId)) return;
+
     setMessages((prev) =>
       prev.filter((msg) => msg.role !== "assistant" || msg.timestamp < lastUserMessage.timestamp),
     );
 
     try {
-      await fetchAssistantResponse(lastUserMessage.content);
+      await fetchAssistantResponse(lastUserMessage.content, effectiveModelId);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         return;
       }
       if (error instanceof Error) {
-        toast.error(error.message, { duration: 2500 });
+        toast.error(error.message, {
+          duration: 3500,
+          description: "Consider switching to a different model if this persists.",
+        });
       }
     }
   };
@@ -160,5 +237,6 @@ export function useChat(chatType: ChatType) {
     hasStartedChat,
     clearChatHistory,
     stopGeneration,
+    throttleSeconds,
   };
 }
