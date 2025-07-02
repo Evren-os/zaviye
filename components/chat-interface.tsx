@@ -11,6 +11,7 @@ import { useState } from "react";
 import { SettingsModal } from "./settings/settings-modal";
 import { Button } from "./ui/button";
 import { PersonaHub } from "./persona-hub";
+import { useMounted } from "@/hooks/use-mounted";
 
 interface ChatInterfaceProps {
   activeChat: ChatType;
@@ -34,17 +35,22 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
+  const isMounted = useMounted();
 
   return (
     <>
-      <SettingsModal isOpen={isSettingsOpen} onCloseAction={() => setIsSettingsOpen(false)} />
-
-      <PersonaHub
-        isOpen={isHubOpen}
-        onOpenChange={setIsHubOpen}
-        onSelectPersona={onChatChangeAction}
-        activeChatId={activeChat}
-      />
+      {/* Conditionally render modals only after client-side mount to prevent hydration issues */}
+      {isMounted && (
+        <>
+          <SettingsModal isOpen={isSettingsOpen} onCloseAction={() => setIsSettingsOpen(false)} />
+          <PersonaHub
+            isOpen={isHubOpen}
+            onOpenChange={setIsHubOpen}
+            onSelectPersona={onChatChangeAction}
+            activeChatId={activeChat}
+          />
+        </>
+      )}
 
       <div
         className={cn(
