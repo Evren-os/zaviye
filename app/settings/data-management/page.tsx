@@ -12,49 +12,39 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePersonas } from "@/hooks/use-personas";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { MODELS } from "@/lib/models";
-import type { ModelId } from "@/lib/types";
-
-interface SettingsGlobalProps {
-  onCloseAction: () => void;
-}
 
 const SettingItem = ({
   title,
   description,
   control,
+  isDestructive = false,
 }: {
   title: string;
   description: string;
   control: React.ReactNode;
+  isDestructive?: boolean;
 }) => (
-  <div className="flex items-start justify-between rounded-lg p-4 transition-colors hover:bg-muted/50 border-b last:border-b-0">
-    <div className="space-y-1 pr-4">
-      <p className="font-medium">{title}</p>
+  <div className="flex items-center justify-between p-4">
+    <div className="space-y-0.5">
+      <p className={`font-medium ${isDestructive ? "text-destructive" : ""}`}>{title}</p>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
     <div className="flex-shrink-0">{control}</div>
   </div>
 );
 
-export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
+export default function DataManagementPage() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const { getAllPersonas, getRawCustomPersonas, globalModel, setGlobalModel } = usePersonas();
+  const { getAllPersonas, getRawCustomPersonas, globalModel } = usePersonas();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportAllData = () => {
     try {
       const allPersonas = getAllPersonas();
-      const customPersonasToExport = getRawCustomPersonas(); // This is the fix
+      const customPersonasToExport = getRawCustomPersonas();
       const histories: Record<string, any> = {};
 
       allPersonas.forEach((persona) => {
@@ -66,7 +56,7 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
 
       const dataToExport = {
         globalModel,
-        personas: customPersonasToExport.map(({ icon, ...rest }) => rest), // Export raw custom data
+        personas: customPersonasToExport.map(({ icon, ...rest }) => rest),
         histories,
       };
 
@@ -84,13 +74,11 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
 
       toast.success("Export Successful", {
         description: "All your data has been downloaded.",
-        duration: 3000,
       });
     } catch (error) {
       console.error("Export failed:", error);
       toast.error("Export Failed", {
         description: "Could not export your data.",
-        duration: 3000,
       });
     }
   };
@@ -114,15 +102,10 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
           throw new Error("Invalid backup file format.");
         }
 
-        // Import global model if it exists
         if (data.globalModel) {
           localStorage.setItem("zaviye-global-model", data.globalModel);
         }
-
-        // Import personas
         localStorage.setItem("zaviye-custom-personas", JSON.stringify(data.personas));
-
-        // Import histories
         Object.entries(data.histories).forEach(([id, history]) => {
           localStorage.setItem(`zaviye-${id}-messages`, JSON.stringify(history));
           localStorage.setItem(`zaviye-${id}-started`, "true");
@@ -130,7 +113,7 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
 
         toast.success("Import Successful", {
           description: "Your data has been restored. The app will now reload.",
-          duration: 4000,
+          duration: 3000,
           onDismiss: () => window.location.reload(),
           onAutoClose: () => window.location.reload(),
         });
@@ -138,7 +121,6 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
         console.error("Import failed:", error);
         toast.error("Import Failed", {
           description: error instanceof Error ? error.message : "Could not import data.",
-          duration: 4000,
         });
       }
     };
@@ -154,7 +136,7 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
       });
       toast.success("All Chat Histories Cleared", {
         description: "All conversations have been permanently deleted. The app will reload.",
-        duration: 4000,
+        duration: 3000,
         onDismiss: () => window.location.reload(),
         onAutoClose: () => window.location.reload(),
       });
@@ -163,72 +145,60 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
       console.error("Failed to clear all histories:", error);
       toast.error("Operation Failed", {
         description: "Could not clear all chat histories.",
-        duration: 3000,
       });
     }
   };
 
   return (
     <>
-      <div className="p-6 space-y-6">
-        <div className="border rounded-lg">
-          <SettingItem
-            title="Global AI Model"
-            description="Set the default AI model for all personas. This can be overridden per-persona."
-            control={
-              <Select value={globalModel} onValueChange={(v) => setGlobalModel(v as ModelId)}>
-                <SelectTrigger className="w-[240px]">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODELS.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          />
-        </div>
-        <div className="border rounded-lg">
-          <SettingItem
-            title="Export All Zaviye Data"
-            description="Download a single JSON file containing all your custom personas and chat histories."
-            control={
-              <Button variant="outline" size="sm" onClick={handleExportAllData}>
-                Export
-              </Button>
-            }
-          />
-          <SettingItem
-            title="Import Zaviye Data"
-            description="Restore your custom personas and chat histories from a previously exported backup file."
-            control={
-              <>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".json"
-                  className="hidden"
-                />
-                <Button variant="outline" size="sm" onClick={handleImportClick}>
-                  Import
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Management</CardTitle>
+            <CardDescription>
+              Manage your application data. Actions here affect all personas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y divide-border p-0">
+            <SettingItem
+              title="Export All Zaviye Data"
+              description="Download a single JSON file with all your data."
+              control={
+                <Button variant="outline" size="sm" onClick={handleExportAllData}>
+                  Export
                 </Button>
-              </>
-            }
-          />
-          <SettingItem
-            title="Delete All Chat Histories"
-            description="Permanently delete all conversation data for every persona. This action cannot be undone."
-            control={
-              <Button variant="destructive" size="sm" onClick={() => setIsAlertOpen(true)}>
-                Delete All
-              </Button>
-            }
-          />
-        </div>
+              }
+            />
+            <SettingItem
+              title="Import Zaviye Data"
+              description="Restore data from a backup file."
+              control={
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".json"
+                    className="hidden"
+                  />
+                  <Button variant="outline" size="sm" onClick={handleImportClick}>
+                    Import
+                  </Button>
+                </>
+              }
+            />
+            <SettingItem
+              title="Delete All Chat Histories"
+              description="Permanently delete all conversation data."
+              isDestructive
+              control={
+                <Button variant="destructive" size="sm" onClick={() => setIsAlertOpen(true)}>
+                  Delete
+                </Button>
+              }
+            />
+          </CardContent>
+        </Card>
       </div>
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
@@ -236,7 +206,8 @@ export function SettingsGlobal({ onCloseAction }: SettingsGlobalProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will wipe the chat history for ALL personas. This action cannot be undone.
+              This will wipe the chat history for ALL personas. This action cannot be undone and
+              will reload the application.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

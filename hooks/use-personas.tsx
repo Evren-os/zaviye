@@ -72,7 +72,7 @@ const DEFAULT_PERSONAS: Persona[] = [
 interface PersonasContextType {
   getPersona: (id: string) => Persona | undefined;
   getAllPersonas: () => Persona[];
-  getRawCustomPersonas: () => Persona[]; // New function to get user's raw data
+  getRawCustomPersonas: () => Persona[];
   createPersona: (data: { name: string; prompt: string }) => string;
   updatePersona: (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => void;
   deletePersona: (id: string) => void;
@@ -199,7 +199,7 @@ export function PersonasProvider({ children }: PropsWithChildren) {
   }, []);
 
   const deletePersona = useCallback((id: string) => {
-    setCustomPersonas((prev) => prev.filter((p) => p.id !== id && !p.isDefault));
+    setCustomPersonas((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
   const selectPersona = useCallback(

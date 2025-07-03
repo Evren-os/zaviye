@@ -21,7 +21,7 @@ export const MODELS: Model[] = [
     provider: "Google",
   },
   {
-    id: "gemini-2.5-flash-lite-preview-0617",
+    id: "gemini-2.5-flash-lite-preview-06-17",
     name: "Gemini 2.5 Flash-Lite (Preview)",
     rpm: 7,
     provider: "Google",

@@ -6,12 +6,12 @@ import { useChat } from "@/hooks/use-chat";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import type { ChatType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowDownIcon, SparklesIcon, SettingsIcon } from "lucide-react";
+import { ArrowDownIcon } from "lucide-react";
 import { useState } from "react";
-import { SettingsModal } from "./settings/settings-modal";
 import { Button } from "./ui/button";
 import { PersonaHub } from "./persona-hub";
 import { useMounted } from "@/hooks/use-mounted";
+import { Header } from "./header";
 
 interface ChatInterfaceProps {
   activeChat: ChatType;
@@ -33,23 +33,18 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
     activeChat,
   });
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
   const isMounted = useMounted();
 
   return (
     <>
-      {/* Conditionally render modals only after client-side mount to prevent hydration issues */}
       {isMounted && (
-        <>
-          <SettingsModal isOpen={isSettingsOpen} onCloseAction={() => setIsSettingsOpen(false)} />
-          <PersonaHub
-            isOpen={isHubOpen}
-            onOpenChange={setIsHubOpen}
-            onSelectPersona={onChatChangeAction}
-            activeChatId={activeChat}
-          />
-        </>
+        <PersonaHub
+          isOpen={isHubOpen}
+          onOpenChange={setIsHubOpen}
+          onSelectPersona={onChatChangeAction}
+          activeChatId={activeChat}
+        />
       )}
 
       <div
@@ -58,24 +53,7 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
           "animate-in fade-in duration-500",
         )}
       >
-        <header className="absolute top-0 left-0 p-2 md:p-4 z-20 flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsSettingsOpen(true)}
-            className="h-9 text-muted-foreground hover:text-foreground bg-background/60 backdrop-blur-sm shadow-md"
-          >
-            <SettingsIcon className="h-4 w-4 mr-2" />
-            <span>Settings</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsHubOpen(true)}
-            className="h-9 text-muted-foreground hover:text-foreground bg-background/60 backdrop-blur-sm shadow-md"
-          >
-            <SparklesIcon className="h-4 w-4 mr-2" />
-            <span>Persona Hub</span>
-          </Button>
-        </header>
+        <Header onOpenHubAction={() => setIsHubOpen(true)} />
 
         <div
           ref={messagesContainerRef}
