@@ -80,7 +80,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 }
 
@@ -252,4 +252,57 @@ main * {
 
 .animate-new-message {
   animation: newMessagePulse 1.5s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@layer components {
+  .hub-pill-button {
+    @apply relative inline-flex h-9 items-center justify-center gap-2 overflow-hidden rounded-full border border-primary/20 bg-primary/10 px-4 text-sm font-medium text-primary transition-all duration-300 hover:border-primary/40 hover:bg-primary/15 hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+  .hub-pill-button::before {
+    content: "";
+    @apply absolute -left-1/2 -top-1/2 z-0 h-[200%] w-[200%] -translate-x-full -translate-y-full scale-50 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_50%)] opacity-0 transition-all duration-500 ease-in-out;
+  }
+  .hub-pill-button:hover::before {
+    @apply opacity-100 scale-100 translate-x-0 translate-y-0;
+  }
+
+  .hub-radial-bg {
+    @apply bg-popover;
+    background-image: radial-gradient(
+      circle at 20% 20%,
+      hsl(var(--primary) / 0.05),
+      transparent 40%
+    );
+  }
+  .dark .hub-radial-bg {
+    background-image: radial-gradient(
+      circle at 20% 20%,
+      hsl(var(--primary) / 0.1),
+      transparent 40%
+    );
+  }
+
+  .hub-item {
+    @apply relative rounded-lg border-2 border-transparent transition-colors duration-200;
+  }
+  .hub-item::before {
+    content: "";
+    @apply absolute bottom-0 left-0 top-0 w-1 scale-y-0 rounded-full bg-primary/80 opacity-0 transition-all duration-200 ease-in-out;
+  }
+  .hub-item[aria-selected="true"]::before,
+  .hub-item[data-selected="true"]::before,
+  .hub-item:hover::before {
+    @apply scale-y-100 opacity-100;
+  }
+  .hub-item:hover {
+    @apply bg-accent/50;
+  }
+  .hub-item[aria-selected="true"],
+  .hub-item[data-selected="true"] {
+    @apply border-primary/20 bg-primary/5;
+  }
+
+  .hub-create-item {
+    @apply mb-2 border-2 border-dashed border-primary/20 bg-primary/5 text-primary transition-colors duration-200 hover:border-primary/40 hover:bg-primary/10;
+  }
 }

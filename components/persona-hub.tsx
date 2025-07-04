@@ -87,6 +87,7 @@ function PersonaEditorForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Code Reviewer"
+            className="font-mono"
           />
         </div>
         <div className="space-y-2 flex-1 flex flex-col">
@@ -96,7 +97,7 @@ function PersonaEditorForm({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="You are a helpful AI assistant that..."
-            className="flex-1 resize-none min-h-[240px]"
+            className="flex-1 resize-none min-h-[240px] font-mono"
           />
         </div>
       </div>
@@ -212,7 +213,7 @@ export function PersonaHub({
           <DialogContent
             showCloseButton={isMobile}
             className={cn(
-              "p-0 shadow-lg overflow-hidden flex flex-col bg-popover",
+              "p-0 shadow-lg overflow-hidden flex flex-col hub-radial-bg",
               isMobile
                 ? "h-dvh w-screen max-h-dvh max-w-full rounded-none border-none"
                 : "w-[95vw] max-w-[640px] h-[70vh] max-h-[550px] rounded-lg",
@@ -224,23 +225,23 @@ export function PersonaHub({
             <DialogTitle className="sr-only">Persona Hub</DialogTitle>
             {view === "list" ? (
               <Command
-                className="flex-1 flex flex-col min-h-0 [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-4 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+                className="flex-1 flex flex-col min-h-0 bg-transparent [&_[cmdk-input-wrapper]]:border-b-0 [&_[cmdk-input-wrapper]]:bg-background/50 [&_[cmdk-input-wrapper]]:px-4 [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12"
                 shouldFilter={true}
               >
-                <CommandInput placeholder="Search..." />
-                <CommandList className="flex-1 min-h-0 overflow-y-auto max-h-none">
+                <CommandInput placeholder="Search personas..." />
+                <CommandList className="flex-1 min-h-0 overflow-y-auto max-h-none p-2">
                   <CommandEmpty>No results found.</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
                       onSelect={handleCreate}
                       data-cmdk-item-id="create-new"
-                      className="h-[52px]"
+                      className="hub-create-item h-[52px] px-4"
                     >
-                      <PlusCircle />
+                      <PlusCircle className="mr-2 h-4 w-4" />
                       <span>Create New Private Chat</span>
                     </CommandItem>
                   </CommandGroup>
-                  <CommandGroup heading="Today">
+                  <CommandGroup heading="Personas">
                     {personas.map((persona) => {
                       const Icon = persona.icon;
                       const effectiveModelId = persona.model || globalModel;
@@ -252,18 +253,18 @@ export function PersonaHub({
                           key={persona.id}
                           value={persona.name}
                           onSelect={() => handleSelect(persona.id)}
-                          className="group py-3 h-auto"
+                          className="group hub-item h-auto px-4 py-3"
                           data-cmdk-item-id={persona.id}
                         >
                           <div className="flex items-center gap-3 w-full">
-                            <Icon />
+                            <Icon className="h-5 w-5" />
                             <div className="flex flex-col">
-                              <span>{persona.name}</span>
+                              <span className="font-medium">{persona.name}</span>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Badge
                                     variant={isOverride ? "default" : "secondary"}
-                                    className="cursor-pointer w-fit mt-1"
+                                    className="cursor-pointer w-fit mt-1.5"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     {isOverride
@@ -300,7 +301,7 @@ export function PersonaHub({
                               </DropdownMenu>
                             </div>
                           </div>
-                          <div className="ml-auto hidden items-center gap-2 group-hover:flex group-aria-selected:flex">
+                          <div className="ml-auto hidden items-center gap-1 group-hover:flex group-aria-selected:flex">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button

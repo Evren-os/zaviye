@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LoadingDots } from "@/components/loading-dots";
-import type { Message, ChatType } from "@/lib/types";
+import type { Message, ChatType, Persona } from "@/lib/types";
 import { CodeBlock } from "./code-block";
 import { MessageActionsToolbar } from "./message-actions-toolbar";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -39,7 +39,7 @@ const IntroScreen = ({
   persona,
   onSendDemoPrompt,
 }: {
-  persona: ReturnType<typeof usePersonas>["getPersona"];
+  persona: Persona | undefined;
   onSendDemoPrompt: (prompt: string) => void;
 }) => {
   if (!persona) return null;
@@ -59,7 +59,7 @@ const IntroScreen = ({
             <Collapsible>
               <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
                 <div className="pt-2">
-                  <p className="text-muted-foreground/80 text-xs leading-relaxed bg-background/50 p-3 rounded-lg border">
+                  <p className="text-muted-foreground/80 text-xs leading-relaxed bg-background/50 p-3 rounded-lg border font-mono">
                     {persona.description}
                   </p>
                 </div>
@@ -84,7 +84,7 @@ const IntroScreen = ({
               <h4 className="text-sm font-medium text-muted-foreground">Try these examples:</h4>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-              {persona.demoPrompts?.map((prompt, i) => (
+              {persona.demoPrompts?.map((prompt: string, i: number) => (
                 <Button
                   key={i}
                   variant="outline"
