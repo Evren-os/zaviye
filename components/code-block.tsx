@@ -48,7 +48,7 @@ export function CodeBlock({ code }: CodeBlockProps) {
             <p>{isCopied ? "Copied!" : "Copy code"}</p>
           </TooltipContent>
         </Tooltip>
-        <pre className="overflow-x-auto p-4 pt-12">
+        <pre className="overflow-x-auto p-3 pt-10 md:p-4 md:pt-12">
           <code className="whitespace-pre-wrap">{code}</code>
         </pre>
       </div>

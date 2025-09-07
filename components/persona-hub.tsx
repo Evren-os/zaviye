@@ -37,7 +37,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { usePersonas } from "@/hooks/use-personas";
 import { ArrowLeft, ArrowUpRight, FilePenLine, PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Persona, ModelId } from "@/lib/types";
+import type { Persona } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -375,8 +375,8 @@ export function PersonaHub({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the '{personaToDelete?.name}' persona. This action cannot
-              be undone.
+              This will permanently delete the &apos;{personaToDelete?.name}&apos; persona. This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

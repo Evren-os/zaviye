@@ -7,7 +7,7 @@ import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import type { ChatType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowDownIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { PersonaHub } from "./persona-hub";
 import { useMounted } from "@/hooks/use-mounted";
@@ -36,6 +36,9 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
   const [isHubOpen, setIsHubOpen] = useState(false);
   const isMounted = useMounted();
 
+  // Global keyboard shortcuts
+  useChatKeyboardShortcuts(isHubOpen, setIsHubOpen);
+
   return (
     <>
       {isMounted && (
@@ -50,7 +53,7 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
       <div
         className={cn(
           "h-dvh w-full flex flex-col overflow-hidden relative",
-          "animate-in fade-in duration-500",
+          "animate-in fade-in duration-300",
         )}
       >
         <Header onOpenHubAction={() => setIsHubOpen(true)} />
@@ -63,7 +66,6 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
             <ChatMessages
               messages={messages}
               isLoading={isLoading}
-              hasStartedChat={messages.length > 0}
               activeChat={activeChat}
               onRegenerateAction={regenerateLastResponse}
               onSendDemoPrompt={sendMessage}
@@ -72,7 +74,7 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
           </div>
         </div>
 
-        <div className="relative flex-shrink-0 p-2 pb-4 md:p-4 md:pb-6 z-10">
+        <div className="relative flex-shrink-0 p-2 pb-4 md:p-4 md:pb-6 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
           <div
             className={cn(
               "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 transition-all duration-300 ease-in-out",
@@ -106,4 +108,51 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
       </div>
     </>
   );
+}
+
+// Keyboard shortcuts
+// '/' focuses the chat input (when not typing in another field)
+// Cmd/Ctrl+K opens the Persona Hub
+// Esc closes the Persona Hub if open
+export function useChatKeyboardShortcuts(isHubOpen: boolean, setIsHubOpen: (open: boolean) => void) {
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      const editable = target.getAttribute("contenteditable");
+      return tag === "INPUT" || tag === "TEXTAREA" || editable === "" || editable === "true";
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Focus input on '/'
+      if (
+        e.key === "/" &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !isTypingTarget(e.target)
+      ) {
+        e.preventDefault();
+        const el = document.getElementById("zaviye-chat-input") as HTMLTextAreaElement | null;
+        el?.focus();
+        return;
+      }
+
+      // Open Hub on Cmd/Ctrl+K
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsHubOpen(true);
+        return;
+      }
+
+      // Close Hub on Esc
+      if (e.key === "Escape" && isHubOpen) {
+        e.preventDefault();
+        setIsHubOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isHubOpen, setIsHubOpen]);
 }

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePersonas } from "@/hooks/use-personas";
+import type { Message } from "@/lib/types";
 
 const SettingItem = ({
   title,
@@ -45,7 +46,7 @@ export default function DataManagementPage() {
     try {
       const allPersonas = getAllPersonas();
       const customPersonasToExport = getRawCustomPersonas();
-      const histories: Record<string, any> = {};
+      const histories: Record<string, Message[]> = {};
 
       allPersonas.forEach((persona) => {
         const history = localStorage.getItem(`zaviye-${persona.id}-messages`);
@@ -56,7 +57,7 @@ export default function DataManagementPage() {
 
       const dataToExport = {
         globalModel,
-        personas: customPersonasToExport.map(({ icon, ...rest }) => rest),
+        personas: customPersonasToExport,
         histories,
       };
 

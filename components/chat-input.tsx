@@ -86,6 +86,7 @@ export function ChatInput({
           <div className="relative p-4">
             <Textarea
               ref={textareaRef}
+              id="zaviye-chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -124,7 +125,7 @@ export function ChatInput({
                     onClick={isLoading ? stopGeneration : undefined}
                     disabled={(!input.trim() && !isLoading) || isThrottled}
                     className={cn(
-                      "rounded-lg h-8 w-8 transition-colors duration-200",
+                      "rounded-lg h-10 w-10 md:h-8 md:w-8 transition-colors duration-200",
                       isLoading && "bg-primary hover:bg-primary/90",
                     )}
                     aria-label={isLoading ? "Stop generating" : "Send message"}

@@ -15,7 +15,6 @@ import { usePersonas } from "@/hooks/use-personas";
 interface ChatMessagesProps {
   messages: Message[];
   isLoading: boolean;
-  hasStartedChat: boolean;
   activeChat: ChatType;
   onRegenerateAction: () => void;
   onSendDemoPrompt: (prompt: string) => void;
@@ -109,7 +108,6 @@ const IntroScreen = ({
 export function ChatMessages({
   messages,
   isLoading,
-  hasStartedChat,
   activeChat,
   onRegenerateAction,
   onSendDemoPrompt,
@@ -145,7 +143,15 @@ export function ChatMessages({
   const shouldShowIntroScreen = messages.length === 0 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full" onClick={handleContainerClick}>
+    <div
+      className="flex flex-col h-full"
+      onClick={handleContainerClick}
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions text"
+      aria-busy={isLoading}
+      aria-label="Chat messages"
+    >
       {shouldShowIntroScreen ? (
         <IntroScreen persona={persona} onSendDemoPrompt={onSendDemoPrompt} />
       ) : (
@@ -164,7 +170,7 @@ export function ChatMessages({
               >
                 <div
                   className={cn(
-                    "relative max-w-[85%] rounded-xl px-3.5 py-2.5 transition-all duration-300 text-left",
+                    "relative max-w-[85%] rounded-xl px-3.5 py-2.5 transition-all duration-200 text-left",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground shadow-md"
                       : "bg-muted/80 backdrop-blur-sm border shadow-sm",
@@ -172,7 +178,7 @@ export function ChatMessages({
                   )}
                   onClick={(e) => handleMessageClick(e, message.id)}
                 >
-                  <div className="prose-xs text-sm break-words whitespace-pre-wrap">
+                  <div className="prose-xs text-sm leading-relaxed break-words whitespace-pre-wrap">
                     {messageParts.map((part, partIndex) =>
                       part.type === "code" ? (
                         <CodeBlock key={partIndex} code={part.content} />
@@ -201,7 +207,7 @@ export function ChatMessages({
           })}
 
           {isLoading && (
-            <div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
+            <div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-200">
               <div className="max-w-[85%] rounded-xl bg-muted/80 backdrop-blur-sm border px-3.5 py-2.5 shadow-sm">
                 <LoadingDots />
               </div>
