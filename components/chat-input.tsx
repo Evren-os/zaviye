@@ -79,7 +79,7 @@ export function ChatInput({
         <form
           onSubmit={handleSubmit}
           className={cn(
-            "relative flex flex-col rounded-2xl border bg-background/95 backdrop-blur-sm shadow-lg transition-all duration-300",
+            "relative flex flex-col rounded-2xl border bg-background/95 backdrop-blur-sm shadow-lg transition-all duration-200 motion-reduce:transition-none",
             isFocused ? "ring-2 ring-primary/20 border-primary/30" : "border-border",
           )}
         >
@@ -93,7 +93,7 @@ export function ChatInput({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={persona?.placeholder || "Type your message..."}
-              className="no-focus-outline resize-none border-0 bg-transparent text-sm placeholder:text-muted-foreground/60 transition-all duration-200"
+              className="no-focus-outline resize-none border-0 bg-transparent text-sm placeholder:text-muted-foreground/60 transition-all duration-200 motion-reduce:transition-none"
               style={{ height: `${MIN_TEXTAREA_HEIGHT}px` }}
             />
           </div>
@@ -103,7 +103,7 @@ export function ChatInput({
               variant="outline"
               type="button"
               onClick={onOpenHubAction}
-              className="flex items-center gap-2 rounded-lg border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+              className="flex items-center gap-2 rounded-lg border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 h-11 md:h-9 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {Icon && <Icon className="h-4 w-4" />}
               <span>{persona?.name ?? "Select Persona"}</span>
@@ -113,7 +113,7 @@ export function ChatInput({
             <div className="flex items-center gap-2">
               {isThrottled && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <TimerIcon className="h-4 w-4 animate-pulse" />
+                  <TimerIcon className="h-4 w-4 animate-pulse motion-reduce:animate-none" />
                   <span>Wait {throttleSeconds}s</span>
                 </div>
               )}
@@ -125,7 +125,7 @@ export function ChatInput({
                     onClick={isLoading ? stopGeneration : undefined}
                     disabled={(!input.trim() && !isLoading) || isThrottled}
                     className={cn(
-                      "rounded-lg h-10 w-10 md:h-8 md:w-8 transition-colors duration-200",
+                      "rounded-lg h-11 w-11 md:h-8 md:w-8 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isLoading && "bg-primary hover:bg-primary/90",
                     )}
                     aria-label={isLoading ? "Stop generating" : "Send message"}
@@ -133,7 +133,7 @@ export function ChatInput({
                     <div className="relative h-4 w-4 flex items-center justify-center overflow-hidden">
                       <SquareIcon
                         className={cn(
-                          "absolute transition-all duration-300 ease-in-out",
+                          "absolute transition-all duration-200 ease-in-out motion-reduce:transition-none",
                           isLoading && !isThrottled
                             ? "opacity-100 scale-100"
                             : "opacity-0 -translate-y-full scale-50",
@@ -142,7 +142,7 @@ export function ChatInput({
                       />
                       <SendIcon
                         className={cn(
-                          "absolute transition-all duration-300 ease-in-out",
+                          "absolute transition-all duration-200 ease-in-out motion-reduce:transition-none",
                           isLoading || isThrottled
                             ? "opacity-0 translate-y-full scale-50"
                             : "opacity-100 scale-100",

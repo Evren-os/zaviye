@@ -314,3 +314,80 @@ main * {
     @apply mb-2 border-2 border-dashed border-primary/20 bg-primary/5 text-primary transition-colors duration-200 hover:border-primary/40 hover:bg-primary/10;
   }
 }
+
+/* Markdown base text colors (avoid black text in dark mode) */
+.markdown,
+.markdown p,
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6,
+.markdown ul,
+.markdown ol,
+.markdown li,
+.markdown blockquote,
+.markdown table,
+.markdown th,
+.markdown td,
+.markdown em,
+.markdown strong {
+  color: inherit;
+}
+
+/* Minimal PrismJS theme for rehype-prism-plus (scoped to .markdown) */
+.markdown pre[class*="language-"],
+.markdown code[class*="language-"] {
+  color: hsl(var(--foreground));
+  background: transparent;
+  text-shadow: none;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.markdown pre[class*="language-"] {
+  overflow: auto;
+}
+
+.markdown .token.comment,
+.markdown .token.prolog,
+.markdown .token.doctype,
+.markdown .token.cdata {
+  color: hsl(var(--muted-foreground));
+}
+
+.markdown .token.punctuation { color: hsl(var(--foreground) / 0.75); }
+.markdown .token.property,
+.markdown .token.tag,
+.markdown .token.boolean,
+.markdown .token.number,
+.markdown .token.constant,
+.markdown .token.symbol { color: #e38c6a; }
+
+.markdown .token.selector,
+.markdown .token.attr-name,
+.markdown .token.string,
+.markdown .token.char,
+.markdown .token.builtin,
+.markdown .token.inserted { color: #8ec07c; }
+
+.markdown .token.operator,
+.markdown .token.entity,
+.markdown .token.url { color: #a3a3a3; }
+
+.markdown .token.atrule,
+.markdown .token.attr-value,
+.markdown .token.keyword { color: #7aa2f7; }
+
+.markdown .token.function,
+.markdown .token.class-name { color: #c5a3ff; }
+
+.markdown .token.regex,
+.markdown .token.important,
+.markdown .token.variable { color: #f7768e; }
+
+.markdown .token.deleted { color: #f7768e; }
+.markdown .token.bold { font-weight: 600; }
+.markdown .token.italic { font-style: italic; }

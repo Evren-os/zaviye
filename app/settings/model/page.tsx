@@ -78,7 +78,9 @@ export default function ModelSettingsPage() {
                 <SelectContent className="w-fit">
                   {MODELS.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
-                      {model.name}
+                      <div className="flex items-center gap-2">
+                        <span>{model.name}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

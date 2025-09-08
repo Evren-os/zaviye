@@ -45,6 +45,7 @@ import { Textarea } from "./ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "./ui/badge";
 import { getModelById, MODELS } from "@/lib/models";
+ 
 
 interface PersonaHubProps {
   isOpen: boolean;
@@ -119,21 +120,15 @@ export function PersonaHub({
   onSelectPersona,
   activeChatId,
 }: PersonaHubProps) {
-  const {
-    getAllPersonas,
-    selectPersona,
-    deletePersona,
-    createPersona,
-    updatePersona,
-    getPersona,
-    globalModel,
-  } = usePersonas();
+  const { getAllPersonas, selectPersona, deletePersona, createPersona, updatePersona, getPersona, globalModel } =
+    usePersonas();
   const isMobile = useIsMobile();
 
   const [view, setView] = React.useState<"list" | "edit">("list");
   const [editingPersona, setEditingPersona] = React.useState<Partial<Persona> | null>(null);
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
   const [personaToDelete, setPersonaToDelete] = React.useState<Persona | null>(null);
+  
 
   const personas = getAllPersonas();
 
@@ -197,6 +192,8 @@ export function PersonaHub({
     onOpenChange(false);
   };
 
+  
+
   React.useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
@@ -238,9 +235,10 @@ export function PersonaHub({
                       className="hub-create-item h-[52px] px-4"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      <span>Create New Private Chat</span>
+                      <span>Create Persona</span>
                     </CommandItem>
                   </CommandGroup>
+                  
                   <CommandGroup heading="Personas">
                     {personas.map((persona) => {
                       const Icon = persona.icon;
@@ -282,7 +280,9 @@ export function PersonaHub({
                                       key={m.id}
                                       onSelect={() => updatePersona(persona.id, { model: m.id })}
                                     >
-                                      {m.name}
+                                      <div className="flex items-center gap-2">
+                                        <span>{m.name}</span>
+                                      </div>
                                     </DropdownMenuItem>
                                   ))}
                                   {isOverride && (
@@ -358,6 +358,7 @@ export function PersonaHub({
                     })}
                   </CommandGroup>
                 </CommandList>
+                
               </Command>
             ) : (
               <PersonaEditorForm
@@ -387,6 +388,8 @@ export function PersonaHub({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      
     </>
   );
 }

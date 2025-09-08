@@ -46,7 +46,6 @@ export async function generateContent({
     return data.text;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      console.log("Fetch aborted by user.");
       // Re-throw the abort error so it can be caught and handled upstream
       throw error;
     }

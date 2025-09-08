@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={cn(fontSans.variable, fontMono.variable)}>
-      <body className="font-sans">
+      <body className="font-sans" suppressHydrationWarning={true}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <PersonasProvider>
             {children}

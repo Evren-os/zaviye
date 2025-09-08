@@ -73,6 +73,11 @@ interface PersonasContextType {
   getPersona: (id: string) => Persona | undefined;
   getAllPersonas: () => Persona[];
   getRawCustomPersonas: () => Persona[];
+  exportCustomPersonas: () => Omit<Persona, "icon">[];
+  importCustomPersonas: (
+    data: Array<Omit<Persona, "icon">>,
+    options?: { overwrite?: boolean }
+  ) => { added: number; updated: number };
   createPersona: (data: { name: string; prompt: string }) => string;
   updatePersona: (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => void;
   deletePersona: (id: string) => void;
@@ -158,6 +163,42 @@ export function PersonasProvider({ children }: PropsWithChildren) {
     return customPersonas;
   }, [customPersonas]);
 
+  const exportCustomPersonas = useCallback((): Omit<Persona, "icon">[] => {
+    // strip icon to keep JSON lean and portable
+    return customPersonas.map(({ icon, ...rest }) => rest);
+  }, [customPersonas]);
+
+  const importCustomPersonas = useCallback(
+    (
+      data: Array<Omit<Persona, "icon">>,
+      options?: { overwrite?: boolean },
+    ): { added: number; updated: number } => {
+      const overwrite = options?.overwrite ?? false;
+      let added = 0;
+      let updated = 0;
+
+      setCustomPersonas((prev) => {
+        const map = new Map<string, Persona>(prev.map((p) => [p.id, p]));
+        data.forEach((incoming) => {
+          const existing = map.get(incoming.id);
+          if (existing) {
+            if (overwrite) {
+              map.set(incoming.id, { ...existing, ...incoming, icon: User });
+              updated += 1;
+            }
+          } else {
+            map.set(incoming.id, { ...incoming, icon: User });
+            added += 1;
+          }
+        });
+        return Array.from(map.values());
+      });
+
+      return { added, updated };
+    },
+    [],
+  );
+
   const updatePersona = useCallback(
     (id: string, data: Partial<Omit<Persona, "id" | "isDefault">>) => {
       setCustomPersonas((prev) => {
@@ -222,6 +263,8 @@ export function PersonasProvider({ children }: PropsWithChildren) {
       getPersona,
       getAllPersonas,
       getRawCustomPersonas,
+      exportCustomPersonas,
+      importCustomPersonas,
       createPersona,
       updatePersona,
       deletePersona,
@@ -234,6 +277,8 @@ export function PersonasProvider({ children }: PropsWithChildren) {
       getPersona,
       getAllPersonas,
       getRawCustomPersonas,
+      exportCustomPersonas,
+      importCustomPersonas,
       createPersona,
       updatePersona,
       deletePersona,

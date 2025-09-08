@@ -15,6 +15,7 @@ import { Cog, FileText, Info, LogOut, Shield } from "lucide-react";
 
 export function UserMenu() {
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -47,7 +48,7 @@ export function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem disabled>
           <Shield className="mr-2 h-4 w-4" />
-          <span>Privacy Policy</span>
+          <span>Privacy</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
@@ -56,5 +57,6 @@ export function UserMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 }

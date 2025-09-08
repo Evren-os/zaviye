@@ -41,7 +41,7 @@ export function MessageActionsToolbar({
       <Button
         variant="ghost"
         size="icon"
-        className="h-10 w-10 md:h-7 md:w-7 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        className="h-11 w-11 md:h-7 md:w-7 text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         onClick={onCopyAction}
         aria-label="Copy message"
       >
@@ -51,7 +51,7 @@ export function MessageActionsToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 md:h-7 md:w-7 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          className="h-11 w-11 md:h-7 md:w-7 text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           onClick={onRegenerateAction}
           aria-label="Regenerate response"
         >
