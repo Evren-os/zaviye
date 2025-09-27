@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -75,7 +76,7 @@ const IntroScreen = ({
   );
 };
 
-export function ChatMessages({
+const ChatMessagesComponent = React.memo(function ChatMessages({
   messages,
   isLoading,
   activeChat,
@@ -113,15 +114,15 @@ export function ChatMessages({
   const shouldShowIntroScreen = messages.length === 0 && !isLoading;
 
   return (
-    <div
-      className="flex flex-col h-full"
-      onClick={handleContainerClick}
-      role="log"
-      aria-live="polite"
-      aria-relevant="additions text"
-      aria-busy={isLoading}
-      aria-label="Chat messages"
-    >
+     <div
+       className="flex flex-col h-full"
+       onClick={handleContainerClick}
+       role="log"
+       aria-live="polite"
+       aria-relevant="additions text"
+       aria-busy={isLoading}
+       aria-label={`Chat messages for ${persona?.name || 'current persona'}`}
+     >
       {shouldShowIntroScreen ? (
         <IntroScreen persona={persona} onSendDemoPrompt={onSendDemoPrompt} />
       ) : (
@@ -137,16 +138,18 @@ export function ChatMessages({
                   message.role === "user" ? "items-end" : "items-start",
                 )}
               >
-                <div
-                  className={cn(
-                    "relative max-w-[85%] rounded-xl px-3.5 py-2.5 transition-all duration-200 text-left",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "bg-muted/80 backdrop-blur-sm border shadow-sm text-foreground",
-                    isMobile && "cursor-pointer",
-                  )}
-                  onClick={(e) => handleMessageClick(e, message.id)}
-                >
+                 <div
+                   className={cn(
+                     "relative max-w-[85%] rounded-xl px-3.5 py-2.5 transition-all duration-200 text-left",
+                     message.role === "user"
+                       ? "bg-primary text-primary-foreground shadow-md"
+                       : "bg-muted/80 backdrop-blur-sm border shadow-sm text-foreground",
+                     isMobile && "cursor-pointer",
+                   )}
+                   onClick={(e) => handleMessageClick(e, message.id)}
+                   role="article"
+                   aria-label={`${message.role === "user" ? "Your message" : "Assistant response"}: ${message.content.slice(0, 50)}...`}
+                 >
                   <Markdown className="text-sm break-words">
                     {message.content}
                   </Markdown>
@@ -180,4 +183,6 @@ export function ChatMessages({
       )}
     </div>
   );
-}
+});
+
+export { ChatMessagesComponent as ChatMessages };

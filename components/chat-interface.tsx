@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { PersonaHub } from "./persona-hub";
 import { useMounted } from "@/hooks/use-mounted";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { Header } from "./header";
 
 interface ChatInterfaceProps {
@@ -36,8 +37,17 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
   const [isHubOpen, setIsHubOpen] = useState(false);
   const isMounted = useMounted();
 
+  const handleFocusInput = () => {
+    const el = document.getElementById("zaviye-chat-input") as HTMLTextAreaElement | null;
+    el?.focus();
+  };
+
   // Global keyboard shortcuts
-  useChatKeyboardShortcuts(isHubOpen, setIsHubOpen);
+  useKeyboardShortcuts({
+    isHubOpen,
+    setIsHubOpen,
+    onFocusInput: handleFocusInput,
+  });
 
   return (
     <>
@@ -110,49 +120,4 @@ export function ChatInterface({ activeChat, onChatChangeAction }: ChatInterfaceP
   );
 }
 
-// Keyboard shortcuts
-// '/' focuses the chat input (when not typing in another field)
-// Cmd/Ctrl+K opens the Persona Hub
-// Esc closes the Persona Hub if open
-export function useChatKeyboardShortcuts(isHubOpen: boolean, setIsHubOpen: (open: boolean) => void) {
-  useEffect(() => {
-    const isTypingTarget = (target: EventTarget | null) => {
-      if (!(target instanceof HTMLElement)) return false;
-      const tag = target.tagName;
-      const editable = target.getAttribute("contenteditable");
-      return tag === "INPUT" || tag === "TEXTAREA" || editable === "" || editable === "true";
-    };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Focus input on '/'
-      if (
-        e.key === "/" &&
-        !e.metaKey &&
-        !e.ctrlKey &&
-        !e.altKey &&
-        !isTypingTarget(e.target)
-      ) {
-        e.preventDefault();
-        const el = document.getElementById("zaviye-chat-input") as HTMLTextAreaElement | null;
-        el?.focus();
-        return;
-      }
-
-      // Open Hub on Cmd/Ctrl+K
-      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setIsHubOpen(true);
-        return;
-      }
-
-      // Close Hub on Esc
-      if (e.key === "Escape" && isHubOpen) {
-        e.preventDefault();
-        setIsHubOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isHubOpen, setIsHubOpen]);
-}

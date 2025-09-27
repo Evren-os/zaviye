@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePersonas } from "@/hooks/use-personas";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMounted } from "@/hooks/use-mounted";
 import type { ChatType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChevronDown, SendIcon, SquareIcon, TimerIcon } from "lucide-react";
@@ -22,6 +24,12 @@ interface ChatInputProps {
 const MIN_TEXTAREA_HEIGHT = 80;
 const MAX_TEXTAREA_HEIGHT = 120;
 
+// Responsive heights for mobile
+const getTextareaHeight = (isMobile: boolean) => ({
+  min: isMobile ? 60 : 80,
+  max: isMobile ? 100 : 120,
+});
+
 export function ChatInput({
   onSendAction,
   isLoading,
@@ -37,6 +45,9 @@ export function ChatInput({
   const persona = getPersona(activeChat);
   const Icon = persona?.icon;
   const isThrottled = throttleSeconds > 0;
+  const isMounted = useMounted();
+  const isMobile = useIsMobile();
+  const { min, max } = getTextareaHeight(isMobile && isMounted);
 
   // Reset input when chat type changes
   useEffect(() => {
@@ -48,10 +59,10 @@ export function ChatInput({
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"; // Reset height to recalculate
       const scrollHeight = textareaRef.current.scrollHeight;
-      const newHeight = Math.min(Math.max(scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT);
+      const newHeight = Math.min(Math.max(scrollHeight, min), max);
       textareaRef.current.style.height = `${newHeight}px`;
     }
-  }, [input]);
+  }, [input, min, max]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +70,7 @@ export function ChatInput({
       onSendAction(input.trim());
       setInput("");
       if (textareaRef.current) {
-        textareaRef.current.style.height = `${MIN_TEXTAREA_HEIGHT}px`;
+        textareaRef.current.style.height = `${min}px`;
       }
     }
   };
@@ -94,7 +105,7 @@ export function ChatInput({
               onBlur={() => setIsFocused(false)}
               placeholder={persona?.placeholder || "Type your message..."}
               className="no-focus-outline resize-none border-0 bg-transparent text-sm placeholder:text-muted-foreground/60 transition-all duration-200 motion-reduce:transition-none"
-              style={{ height: `${MIN_TEXTAREA_HEIGHT}px` }}
+              style={{ height: `${min}px` }}
             />
           </div>
 

@@ -4,6 +4,7 @@ import { usePersonas } from "@/hooks/use-personas";
 import { generateContent } from "@/lib/gemini";
 import { getModelById } from "@/lib/models";
 import type { ChatType, Message, ModelId } from "@/lib/types";
+import { checkThrottle, startThrottleTimer, handleError, safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -24,36 +25,18 @@ export function useChat(chatType: ChatType) {
   const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    try {
-      const savedMessages = localStorage.getItem(`zaviye-${chatType}-messages`);
-      const savedChatState = localStorage.getItem(`zaviye-${chatType}-started`);
-      if (savedMessages) {
-        setMessages(JSON.parse(savedMessages));
-      } else {
-        setMessages([]);
-      }
-      setHasStartedChat(savedChatState ? JSON.parse(savedChatState) : false);
-    } catch (error) {
-      console.error("Failed to load chat state from localStorage:", error);
-      setMessages([]);
-      setHasStartedChat(false);
-    }
+    const savedMessages = safeLocalStorageGet(`zaviye-${chatType}-messages`, []);
+    const savedChatState = safeLocalStorageGet(`zaviye-${chatType}-started`, false);
+    setMessages(savedMessages);
+    setHasStartedChat(savedChatState);
   }, [chatType]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(`zaviye-${chatType}-messages`, JSON.stringify(messages));
-    } catch (error) {
-      console.error("Failed to save messages to localStorage:", error);
-    }
+    safeLocalStorageSet(`zaviye-${chatType}-messages`, messages);
   }, [messages, chatType]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(`zaviye-${chatType}-started`, JSON.stringify(hasStartedChat));
-    } catch (error) {
-      console.error("Failed to save chat started state to localStorage:", error);
-    }
+    safeLocalStorageSet(`zaviye-${chatType}-started`, hasStartedChat);
   }, [hasStartedChat, chatType]);
 
   // Cleanup throttle timer on component unmount or chat switch
@@ -76,43 +59,17 @@ export function useChat(chatType: ChatType) {
 
   const checkAndApplyThrottle = useCallback(
     (modelId: ModelId): boolean => {
-      const model = getModelById(modelId);
-      if (!model) {
-        toast.error("Invalid AI model selected.");
-        return true; // Is throttled
-      }
-
-      const now = Date.now();
-      const oneMinuteAgo = now - 60 * 1000;
-
-      const recentTimestamps = (requestTimestamps[modelId] || []).filter((ts) => ts > oneMinuteAgo);
-
-      if (recentTimestamps.length >= model.rpm) {
-        const oldestRequestTime = recentTimestamps[0];
-        const timeToWait = Math.ceil((60 * 1000 - (now - oldestRequestTime)) / 1000);
-        setThrottleSeconds(timeToWait);
-
-        if (throttleTimerRef.current) clearInterval(throttleTimerRef.current);
-        throttleTimerRef.current = setInterval(() => {
-          setThrottleSeconds((prev) => {
-            if (prev <= 1) {
-              if (throttleTimerRef.current) clearInterval(throttleTimerRef.current);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-
-        toast.warning(`Rate limit reached. Please wait ${timeToWait} seconds.`, { duration: 2000 });
-        return true; // Is throttled
-      }
-
-      setRequestTimestamps((prev) => ({
-        ...prev,
-        [modelId]: [...recentTimestamps, now],
-      }));
-
-      return false; // Not throttled
+      return checkThrottle(
+        modelId,
+        requestTimestamps,
+        setThrottleSeconds,
+        setRequestTimestamps,
+        (timeToWait) => {
+          if (throttleTimerRef.current) clearInterval(throttleTimerRef.current);
+          throttleTimerRef.current = startThrottleTimer(setThrottleSeconds);
+          toast.warning(`Rate limit reached. Please wait ${timeToWait} seconds.`, { duration: 2000 });
+        }
+      );
     },
     [requestTimestamps],
   );
@@ -174,15 +131,7 @@ export function useChat(chatType: ChatType) {
     try {
       await fetchAssistantResponse(content, effectiveModelId);
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return;
-      }
-      if (error instanceof Error) {
-        toast.error(error.message, {
-          duration: 3500,
-          description: "Consider switching to a different model if this persists.",
-        });
-      }
+      handleError(error, "sendMessage", toast);
       setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
     }
   };
@@ -206,27 +155,15 @@ export function useChat(chatType: ChatType) {
     try {
       await fetchAssistantResponse(lastUserMessage.content, effectiveModelId);
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return;
-      }
-      if (error instanceof Error) {
-        toast.error(error.message, {
-          duration: 3500,
-          description: "Consider switching to a different model if this persists.",
-        });
-      }
+      handleError(error, "regenerateLastResponse", toast);
     }
   };
 
   const clearChatHistory = useCallback(() => {
     setMessages([]);
     setHasStartedChat(false);
-    try {
-      localStorage.removeItem(`zaviye-${chatType}-messages`);
-      localStorage.removeItem(`zaviye-${chatType}-started`);
-    } catch (error) {
-      console.error("Failed to clear chat history from localStorage:", error);
-    }
+    safeLocalStorageRemove(`zaviye-${chatType}-messages`);
+    safeLocalStorageRemove(`zaviye-${chatType}-started`);
   }, [chatType]);
 
   return {

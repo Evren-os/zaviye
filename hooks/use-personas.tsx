@@ -145,7 +145,7 @@ export function PersonasProvider({ children }: PropsWithChildren) {
 
     const nonOverridingCustom = customPersonas.filter((p) => !defaultMap.has(p.id));
 
-    return [...merged, ...nonOverridingCustom];
+    return [...merged, ...nonOverridingCustom].sort((a, b) => (b.lastUsed ?? 0) - (a.lastUsed ?? 0));
   }, [customPersonas, isMounted]);
 
   const getPersona = useCallback(
@@ -156,7 +156,7 @@ export function PersonasProvider({ children }: PropsWithChildren) {
   );
 
   const getAllPersonas = useCallback((): Persona[] => {
-    return [...personas].sort((a, b) => (b.lastUsed ?? 0) - (a.lastUsed ?? 0));
+    return personas; // Already sorted in useMemo
   }, [personas]);
 
   const getRawCustomPersonas = useCallback((): Persona[] => {
