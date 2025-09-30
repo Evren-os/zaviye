@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import React from "react";
+import React, { useId } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ const PersonaEditorComponent = React.memo(function PersonaEditor({
 }: PersonaEditorProps) {
 	const [name, setName] = React.useState(persona?.name || "");
 	const [prompt, setPrompt] = React.useState(persona?.prompt || "");
+	const nameId = useId();
+	const promptId = useId();
 
 	const handleSaveClick = () => {
 		if (name.trim() && prompt.trim()) {
@@ -46,9 +48,9 @@ const PersonaEditorComponent = React.memo(function PersonaEditor({
 			</DialogHeader>
 			<div className="p-4 space-y-4 flex-1 overflow-y-auto">
 				<div className="space-y-2">
-					<Label htmlFor="persona-name">Name</Label>
+					<Label htmlFor={nameId}>Name</Label>
 					<Input
-						id="persona-name"
+						id={nameId}
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						placeholder="e.g., Code Reviewer"
@@ -56,9 +58,9 @@ const PersonaEditorComponent = React.memo(function PersonaEditor({
 					/>
 				</div>
 				<div className="space-y-2 flex-1 flex flex-col">
-					<Label htmlFor="persona-prompt">System Prompt</Label>
+					<Label htmlFor={promptId}>System Prompt</Label>
 					<Textarea
-						id="persona-prompt"
+						id={promptId}
 						value={prompt}
 						onChange={(e) => setPrompt(e.target.value)}
 						placeholder="You are a helpful AI assistant that..."

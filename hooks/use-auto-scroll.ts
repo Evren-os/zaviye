@@ -65,13 +65,13 @@ export function useAutoScroll({ messages, activeChat }: UseAutoScrollProps) {
 	useLayoutEffect(() => {
 		scrollToBottom("auto");
 		setIsAtBottom(true);
-	}, [activeChat, scrollToBottom]);
+	}, [scrollToBottom]);
 
 	useEffect(() => {
 		if (isAtBottomRef.current) {
 			scrollToBottom("smooth");
 		}
-	}, [messages, scrollToBottom]);
+	}, [scrollToBottom]);
 
 	return {
 		messagesContainerRef,

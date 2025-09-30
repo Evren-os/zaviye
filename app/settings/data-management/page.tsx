@@ -1,8 +1,8 @@
 "use client";
 
-import type React from "react";
-import { useRef, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { FileImportButton } from "@/components/settings/file-import-button";
+import { SettingItem } from "@/components/settings/setting-item";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -21,32 +21,25 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { useDataManagement } from "@/hooks/use-data-management";
 import { usePersonas } from "@/hooks/use-personas";
-import type { Message, Persona } from "@/lib/types";
-
-const SettingItem = ({
-	title,
-	description,
-	control,
-	isDestructive = false,
-}: {
-	title: string;
-	description: string;
-	control: React.ReactNode;
-	isDestructive?: boolean;
-}) => (
-	<div className="flex items-center justify-between p-4">
-		<div className="space-y-0.5">
-			<p className={`font-medium ${isDestructive ? "text-destructive" : ""}`}>
-				{title}
-			</p>
-			<p className="text-sm text-muted-foreground">{description}</p>
-		</div>
-		<div className="flex-shrink-0">{control}</div>
-	</div>
-);
+import type { Persona } from "@/lib/types";
 
 export default function DataManagementPage() {
+	const { getAllPersonas } = usePersonas();
+	const {
+		handleExportAllData,
+		handleExportPersonas,
+		handleImportAllData,
+		handleImportPersonas,
+		finalizePersonaImport,
+		handleClearAllHistory,
+		handleClearPersonaHistory,
+		handleClearAllLocalData,
+		handleResetDefaults,
+	} = useDataManagement();
+
+	// Dialog states
 	const [isAlertOpen, setIsAlertOpen] = useState(false);
 	const [isClearAllDataOpen, setIsClearAllDataOpen] = useState(false);
 	const [isResetDefaultsOpen, setIsResetDefaultsOpen] = useState(false);
@@ -56,287 +49,50 @@ export default function DataManagementPage() {
 	> | null>(null);
 	const [duplicateCount, setDuplicateCount] = useState(0);
 
-	const {
-		getAllPersonas,
-		getRawCustomPersonas,
-		globalModel,
-		exportCustomPersonas,
-		importCustomPersonas,
-	} = usePersonas();
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const personaFileInputRef = useRef<HTMLInputElement>(null);
-
-	const handleExportAllData = () => {
-		try {
-			const allPersonas = getAllPersonas();
-			const customPersonasToExport = getRawCustomPersonas();
-			const histories: Record<string, Message[]> = {};
-
-			allPersonas.forEach((persona) => {
-				const history = localStorage.getItem(`zaviye-${persona.id}-messages`);
-				if (history) {
-					histories[persona.id] = JSON.parse(history);
-				}
-			});
-
-			const dataToExport = {
-				globalModel,
-				personas: customPersonasToExport,
-				histories,
-			};
-			const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
-				type: "application/json",
-			});
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `zaviye-backup-${new Date().toISOString()}.json`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
-
-			toast.success("Export Successful", {
-				description: "All your data has been downloaded.",
-			});
-		} catch (error) {
-			console.error("Export failed:", error);
-			toast.error("Export Failed", {
-				description: "Could not export your data.",
-			});
-		}
+	// Handlers
+	const onImportAllData = (file: File) => {
+		handleImportAllData(file);
 	};
 
-	const handleExportPersonas = () => {
-		try {
-			const data = exportCustomPersonas();
-			const blob = new Blob([JSON.stringify(data, null, 2)], {
-				type: "application/json",
-			});
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `zaviye-personas-${new Date().toISOString()}.json`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
-			toast.success("Personas exported");
-		} catch (error) {
-			console.error("Export personas failed:", error);
-			toast.error("Export failed");
-		}
-	};
-
-	const handleImportPersonasClick = () => {
-		personaFileInputRef.current?.click();
-	};
-
-	const handlePersonaFileChange = (
-		event: React.ChangeEvent<HTMLInputElement>,
-	) => {
-		const file = event.target.files?.[0];
-		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			try {
-				const text = e.target?.result;
-				if (typeof text !== "string") throw new Error("Invalid file content");
-				const parsed = JSON.parse(text);
-				const incoming = Array.isArray(parsed)
-					? parsed
-					: Array.isArray(parsed?.personas)
-						? parsed.personas
-						: null;
-				if (!Array.isArray(incoming))
-					throw new Error("Invalid personas file format");
-
-				const existing = getRawCustomPersonas();
-				const dup = incoming.filter((p: any) =>
-					existing.some((e) => e.id === p.id),
-				).length;
-				setPendingImportData(incoming);
-				setDuplicateCount(dup);
-				if (dup > 0) {
-					setIsImportDupOpen(true);
-				} else {
-					const res = importCustomPersonas(incoming as any, {
-						overwrite: false,
-					});
-					toast.success("Import complete", {
-						description: `Added ${res.added}.`,
-					});
-				}
-				event.target.value = "";
-			} catch (error) {
-				console.error("Import personas failed:", error);
-				toast.error("Import failed", {
-					description: error instanceof Error ? error.message : undefined,
-				});
+	const onImportPersonas = async (file: File) => {
+		const result = await handleImportPersonas(file);
+		if (result) {
+			setPendingImportData(result.data);
+			setDuplicateCount(result.duplicateCount);
+			if (result.duplicateCount > 0) {
+				setIsImportDupOpen(true);
 			}
-		};
-		reader.readAsText(file);
-	};
-
-	const finalizePersonaImport = (overwrite: boolean) => {
-		if (!pendingImportData) return;
-		try {
-			const res = importCustomPersonas(pendingImportData as any, { overwrite });
-			toast.success("Import complete", {
-				description: `Added ${res.added}${overwrite ? `, updated ${res.updated}` : ""}.`,
-			});
-		} catch (error) {
-			console.error("Merge personas failed:", error);
-			toast.error("Import failed");
-		} finally {
-			setIsImportDupOpen(false);
-			setPendingImportData(null);
-			setDuplicateCount(0);
 		}
 	};
 
-	const handleClearAllLocalData = () => {
-		setIsClearAllDataOpen(true);
-	};
-
-	const confirmClearAllLocalData = () => {
-		try {
-			const keysToRemove: string[] = [];
-			for (let i = 0; i < localStorage.length; i++) {
-				const key = localStorage.key(i);
-				if (key && key.startsWith("zaviye-")) keysToRemove.push(key);
-			}
-			keysToRemove.forEach((k) => localStorage.removeItem(k));
-			toast.success("Cleared all local data", {
-				description: "The app will now reload.",
-				duration: 2500,
-				onDismiss: () => window.location.reload(),
-				onAutoClose: () => window.location.reload(),
-			});
-		} catch (error) {
-			console.error("Failed to clear all local data:", error);
-			toast.error("Operation Failed", {
-				description: "Could not clear local data.",
-			});
-		} finally {
-			setIsClearAllDataOpen(false);
+	const confirmFinalizePersonaImport = (overwrite: boolean) => {
+		if (pendingImportData) {
+			finalizePersonaImport(pendingImportData, overwrite);
 		}
+		setIsImportDupOpen(false);
+		setPendingImportData(null);
+		setDuplicateCount(0);
 	};
 
-	const handleResetDefaults = () => setIsResetDefaultsOpen(true);
+	const confirmClearAllHistory = () => {
+		handleClearAllHistory();
+		setIsAlertOpen(false);
+	};
+
+	const confirmClearAllData = () => {
+		handleClearAllLocalData();
+		setIsClearAllDataOpen(false);
+	};
 
 	const confirmResetDefaults = () => {
-		try {
-			localStorage.removeItem("zaviye-custom-personas");
-			localStorage.removeItem("zaviye-global-model");
-			toast.success("Defaults restored", {
-				description: "Default personas and model restored. Reloading...",
-				duration: 2500,
-				onDismiss: () => window.location.reload(),
-				onAutoClose: () => window.location.reload(),
-			});
-		} catch (error) {
-			console.error("Failed to reset defaults:", error);
-			toast.error("Operation Failed", {
-				description: "Could not reset defaults.",
-			});
-		} finally {
-			setIsResetDefaultsOpen(false);
-		}
-	};
-
-	const handleDeletePersonaHistory = (id: string) => {
-		try {
-			localStorage.removeItem(`zaviye-${id}-messages`);
-			localStorage.removeItem(`zaviye-${id}-started`);
-			toast.success("Chat history cleared", {
-				description: `Cleared history for ${id}.`,
-			});
-		} catch (error) {
-			console.error("Failed to delete history for", id, error);
-			toast.error("Operation Failed", {
-				description: "Could not delete history for persona.",
-			});
-		}
-	};
-
-	const handleImportClick = () => {
-		fileInputRef.current?.click();
-	};
-
-	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0];
-		if (!file) return;
-
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			try {
-				const text = e.target?.result;
-				if (typeof text !== "string") throw new Error("Invalid file content");
-
-				const data = JSON.parse(text);
-				if (!data.personas || !data.histories) {
-					throw new Error("Invalid backup file format.");
-				}
-
-				if (data.globalModel) {
-					localStorage.setItem("zaviye-global-model", data.globalModel);
-				}
-				localStorage.setItem(
-					"zaviye-custom-personas",
-					JSON.stringify(data.personas),
-				);
-				Object.entries(data.histories).forEach(([id, history]) => {
-					localStorage.setItem(
-						`zaviye-${id}-messages`,
-						JSON.stringify(history),
-					);
-					localStorage.setItem(`zaviye-${id}-started`, "true");
-				});
-
-				toast.success("Import Successful", {
-					description: "Your data has been restored. The app will now reload.",
-					duration: 3000,
-					onDismiss: () => window.location.reload(),
-					onAutoClose: () => window.location.reload(),
-				});
-			} catch (error) {
-				console.error("Import failed:", error);
-				toast.error("Import Failed", {
-					description:
-						error instanceof Error ? error.message : "Could not import data.",
-				});
-			}
-		};
-		reader.readAsText(file);
-	};
-
-	const handleConfirmClearAllHistory = () => {
-		try {
-			const personas = getAllPersonas();
-			personas.forEach((persona) => {
-				localStorage.removeItem(`zaviye-${persona.id}-messages`);
-				localStorage.removeItem(`zaviye-${persona.id}-started`);
-			});
-			toast.success("All Chat Histories Cleared", {
-				description:
-					"All conversations have been permanently deleted. The app will reload.",
-				duration: 3000,
-				onDismiss: () => window.location.reload(),
-				onAutoClose: () => window.location.reload(),
-			});
-			setIsAlertOpen(false);
-		} catch (error) {
-			console.error("Failed to clear all histories:", error);
-			toast.error("Operation Failed", {
-				description: "Could not clear all chat histories.",
-			});
-		}
+		handleResetDefaults();
+		setIsResetDefaultsOpen(false);
 	};
 
 	return (
 		<>
 			<div className="space-y-6">
+				{/* Main Data Management Card */}
 				<Card>
 					<CardHeader>
 						<CardTitle>Data Management</CardTitle>
@@ -362,22 +118,9 @@ export default function DataManagementPage() {
 							title="Import Zaviye Data"
 							description="Restore data from a backup file."
 							control={
-								<>
-									<input
-										type="file"
-										ref={fileInputRef}
-										onChange={handleFileChange}
-										accept=".json"
-										className="hidden"
-									/>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleImportClick}
-									>
-										Import
-									</Button>
-								</>
+								<FileImportButton onFileSelect={onImportAllData}>
+									Import
+								</FileImportButton>
 							}
 						/>
 						<SettingItem
@@ -397,22 +140,9 @@ export default function DataManagementPage() {
 							title="Import Personas Only"
 							description="Merge or overwrite custom personas from a file."
 							control={
-								<>
-									<input
-										type="file"
-										ref={personaFileInputRef}
-										onChange={handlePersonaFileChange}
-										accept=".json"
-										className="hidden"
-									/>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleImportPersonasClick}
-									>
-										Import
-									</Button>
-								</>
+								<FileImportButton onFileSelect={onImportPersonas}>
+									Import
+								</FileImportButton>
 							}
 						/>
 						<SettingItem
@@ -437,7 +167,7 @@ export default function DataManagementPage() {
 								<Button
 									variant="destructive"
 									size="sm"
-									onClick={handleClearAllLocalData}
+									onClick={() => setIsClearAllDataOpen(true)}
 								>
 									Clear
 								</Button>
@@ -451,7 +181,7 @@ export default function DataManagementPage() {
 								<Button
 									variant="destructive"
 									size="sm"
-									onClick={handleResetDefaults}
+									onClick={() => setIsResetDefaultsOpen(true)}
 								>
 									Reset
 								</Button>
@@ -460,6 +190,7 @@ export default function DataManagementPage() {
 					</CardContent>
 				</Card>
 
+				{/* Per-Persona History Card */}
 				<Card>
 					<CardHeader>
 						<CardTitle>Per-Persona Chat History</CardTitle>
@@ -482,7 +213,7 @@ export default function DataManagementPage() {
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => handleDeletePersonaHistory(persona.id)}
+									onClick={() => handleClearPersonaHistory(persona.id)}
 								>
 									Delete History
 								</Button>
@@ -492,6 +223,7 @@ export default function DataManagementPage() {
 				</Card>
 			</div>
 
+			{/* Clear All History Dialog */}
 			<AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
@@ -505,7 +237,7 @@ export default function DataManagementPage() {
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
-							onClick={handleConfirmClearAllHistory}
+							onClick={confirmClearAllHistory}
 						>
 							Yes
 						</AlertDialogAction>
@@ -513,6 +245,7 @@ export default function DataManagementPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 
+			{/* Clear All Data Dialog */}
 			<AlertDialog
 				open={isClearAllDataOpen}
 				onOpenChange={setIsClearAllDataOpen}
@@ -529,7 +262,7 @@ export default function DataManagementPage() {
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
-							onClick={confirmClearAllLocalData}
+							onClick={confirmClearAllData}
 						>
 							Clear
 						</AlertDialogAction>
@@ -537,6 +270,7 @@ export default function DataManagementPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 
+			{/* Reset Defaults Dialog */}
 			<AlertDialog
 				open={isResetDefaultsOpen}
 				onOpenChange={setIsResetDefaultsOpen}
@@ -561,6 +295,7 @@ export default function DataManagementPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 
+			{/* Import Duplicates Dialog */}
 			<AlertDialog open={isImportDupOpen} onOpenChange={setIsImportDupOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
@@ -575,10 +310,14 @@ export default function DataManagementPage() {
 						<AlertDialogCancel onClick={() => setPendingImportData(null)}>
 							Cancel
 						</AlertDialogCancel>
-						<AlertDialogAction onClick={() => finalizePersonaImport(false)}>
+						<AlertDialogAction
+							onClick={() => confirmFinalizePersonaImport(false)}
+						>
 							Merge (keep existing)
 						</AlertDialogAction>
-						<AlertDialogAction onClick={() => finalizePersonaImport(true)}>
+						<AlertDialogAction
+							onClick={() => confirmFinalizePersonaImport(true)}
+						>
 							Overwrite duplicates
 						</AlertDialogAction>
 					</AlertDialogFooter>

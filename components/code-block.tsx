@@ -32,7 +32,7 @@ export function CodeBlock({ language, children }: CodeBlockProps) {
 		const lines = text.split("\n").length;
 		setLineCount(lines);
 		setCollapsed(lines > COLLAPSE_AT);
-	}, [children]);
+	}, []);
 
 	const handleCopy = async () => {
 		try {

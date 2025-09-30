@@ -1,7 +1,6 @@
 "use client";
 
 import { defaultSchema } from "hast-util-sanitize";
-import React from "react";
 import ReactMarkdown from "react-markdown";
 import rehypePrism from "rehype-prism-plus";
 import rehypeSanitize from "rehype-sanitize";
@@ -143,7 +142,7 @@ export function Markdown({ children, className }: MarkdownProps) {
 					),
 					code: (props: any) => {
 						const { inline, className, children, ...rest } = props as any;
-						const languageMatch = /language-(\w+)/.exec(className || "");
+						const _languageMatch = /language-(\w+)/.exec(className || "");
 						if (inline) {
 							return (
 								<code

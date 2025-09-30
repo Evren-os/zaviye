@@ -26,7 +26,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getModelById, MODELS } from "@/lib/models";
-import type { Persona } from "@/lib/types";
+import type { ModelId, Persona } from "@/lib/types";
 
 interface PersonaListProps {
 	personas: Persona[];
@@ -35,7 +35,7 @@ interface PersonaListProps {
 	onDelete: (id: string) => void;
 	onCreate: () => void;
 	activeChatId: string;
-	onUpdatePersonaModel: (id: string, model: string | undefined) => void;
+	onUpdatePersonaModel: (id: string, model: ModelId | undefined) => void;
 }
 
 const PersonaListComponent = React.memo(function PersonaList({

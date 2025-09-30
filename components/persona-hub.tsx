@@ -1,47 +1,10 @@
 "use client";
 
-import * as React from "react";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from "@/components/ui/command";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useEffect } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { usePersonas } from "@/hooks/use-personas";
-import type { Persona } from "@/lib/types";
+import { usePersonaHub } from "@/hooks/use-persona-hub";
 import { cn } from "@/lib/utils";
 import { PersonaActions } from "./persona-actions";
 import { PersonaEditor } from "./persona-editor";
@@ -60,95 +23,31 @@ export function PersonaHub({
 	onSelectPersona,
 	activeChatId,
 }: PersonaHubProps) {
-	const {
-		getAllPersonas,
-		selectPersona,
-		deletePersona,
-		createPersona,
-		updatePersona,
-		getPersona,
-		globalModel,
-	} = usePersonas();
 	const isMobile = useIsMobile();
+	const {
+		view,
+		editingPersona,
+		personas,
+		isAlertOpen,
+		setIsAlertOpen,
+		personaToDelete,
+		handleSelect,
+		handleEdit,
+		handleDelete,
+		handleConfirmDelete,
+		handleCreate,
+		handleSave,
+		handleBack,
+		handleUpdatePersonaModel,
+		resetState,
+	} = usePersonaHub(activeChatId, onSelectPersona, () => onOpenChange(false));
 
-	const [view, setView] = React.useState<"list" | "edit">("list");
-	const [editingPersona, setEditingPersona] =
-		React.useState<Partial<Persona> | null>(null);
-	const [isAlertOpen, setIsAlertOpen] = React.useState(false);
-	const [personaToDelete, setPersonaToDelete] = React.useState<Persona | null>(
-		null,
-	);
-
-	const personas = getAllPersonas();
-
-	const runCommand = React.useCallback(
-		(command: () => void) => {
-			command();
-			onOpenChange(false);
-		},
-		[onOpenChange],
-	);
-
-	const handleSelect = (id: string) => {
-		runCommand(() => {
-			onSelectPersona(id);
-			selectPersona(id);
-		});
-	};
-
-	const handleEdit = (id: string) => {
-		const persona = getPersona(id);
-		if (persona) {
-			setEditingPersona(persona);
-			setView("edit");
-		}
-	};
-
-	const handleDelete = (id: string) => {
-		const persona = getPersona(id);
-		if (persona && !persona.isDefault) {
-			setPersonaToDelete(persona);
-			setIsAlertOpen(true);
-		}
-	};
-
-	const handleConfirmDelete = () => {
-		if (personaToDelete) {
-			const isDeletingActive = personaToDelete.id === activeChatId;
-			deletePersona(personaToDelete.id);
-			setIsAlertOpen(false);
-			setPersonaToDelete(null);
-			if (isDeletingActive) {
-				onSelectPersona("glitch");
-			}
-		}
-	};
-
-	const handleCreate = () => {
-		setEditingPersona(null);
-		setView("edit");
-	};
-
-	const handleSave = (data: { name: string; prompt: string }) => {
-		if (editingPersona?.id) {
-			updatePersona(editingPersona.id, data);
-		} else {
-			const newId = createPersona(data);
-			onSelectPersona(newId);
-		}
-		setView("list");
-		setEditingPersona(null);
-		onOpenChange(false);
-	};
-
-	React.useEffect(() => {
+	// Reset state when dialog closes
+	useEffect(() => {
 		if (!isOpen) {
-			setTimeout(() => {
-				setView("list");
-				setEditingPersona(null);
-			}, 200);
+			setTimeout(resetState, 200);
 		}
-	}, [isOpen]);
+	}, [isOpen, resetState]);
 
 	return (
 		<>
@@ -175,15 +74,13 @@ export function PersonaHub({
 								onDelete={handleDelete}
 								onCreate={handleCreate}
 								activeChatId={activeChatId}
-								onUpdatePersonaModel={(id, model) =>
-									updatePersona(id, { model })
-								}
+								onUpdatePersonaModel={handleUpdatePersonaModel}
 							/>
 						) : (
 							<PersonaEditor
 								persona={editingPersona}
 								onSave={handleSave}
-								onBack={() => setView("list")}
+								onBack={handleBack}
 							/>
 						)}
 					</DialogContent>

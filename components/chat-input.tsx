@@ -53,7 +53,7 @@ export function ChatInput({
 	// Reset input when chat type changes
 	useEffect(() => {
 		setInput("");
-	}, [activeChat]);
+	}, []);
 
 	// Auto-resize textarea
 	useEffect(() => {
@@ -63,7 +63,7 @@ export function ChatInput({
 			const newHeight = Math.min(Math.max(scrollHeight, min), max);
 			textareaRef.current.style.height = `${newHeight}px`;
 		}
-	}, [input, min, max]);
+	}, [min, max]);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
