@@ -20,7 +20,7 @@ setInterval(() => {
 }, CLEANUP_INTERVAL_MS);
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
-const DEFAULT_MODEL_NAME = "gemini-2.5-flash";
+const DEFAULT_MODEL_NAME = "gemini-3-flash-preview";
 
 interface GeminiRequestBody {
 	systemPrompt: string;
@@ -89,10 +89,11 @@ export async function POST(request: NextRequest) {
 				parts: [{ text: systemPrompt }],
 			},
 			generationConfig: {
-				temperature: 0.3,
+				temperature: 1.0,
 				topK: 40,
 				topP: 0.95,
-				maxOutputTokens: 2048,
+				maxOutputTokens: 65536,
+				thinkingLevel: "high",
 			},
 			safetySettings: [
 				{ category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },

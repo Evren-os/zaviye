@@ -11,4 +11,4 @@ export const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 /**
  * Default model ID used throughout the application
  */
-export const DEFAULT_MODEL_ID = "gemini-2.5-flash" as const;
+export const DEFAULT_MODEL_ID = "gemini-3-flash-preview" as const;

@@ -67,7 +67,8 @@ const PersonaListComponent = React.memo(function PersonaList({
 					<CommandGroup heading="Personas">
 						{personas.map((persona) => {
 							const Icon = persona.icon;
-							const effectiveModelId = persona.model || "gemini-2.5-flash"; // Default for display
+							const effectiveModelId =
+								persona.model || "gemini-3-flash-preview"; // Default for display
 							const model = getModelById(effectiveModelId);
 							const isOverride = !!persona.model;
 
@@ -92,7 +93,7 @@ const PersonaListComponent = React.memo(function PersonaList({
 													>
 														{isOverride
 															? model?.name
-															: `Default: ${getModelById("gemini-2.5-flash")?.name}`}
+															: `Default: ${getModelById("gemini-3-flash-preview")?.name}`}
 													</Badge>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent
