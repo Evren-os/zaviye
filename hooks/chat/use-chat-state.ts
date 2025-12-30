@@ -25,7 +25,7 @@ export function useChatState(chatType: ChatType) {
 		setHasStartedChat,
 		clearHistory,
 	} = useChatStorage(chatType);
-	const { throttleSeconds, checkAndApplyThrottle } = useRateLimit(chatType);
+	const { throttleSeconds, checkAndApplyThrottle } = useRateLimit();
 	const { isLoading, fetchAssistantResponse, stopGeneration } = useChatApi();
 
 	const sendMessage = async (content: string) => {

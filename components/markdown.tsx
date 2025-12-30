@@ -1,5 +1,6 @@
 "use client";
 
+import type { Schema } from "hast-util-sanitize";
 import { defaultSchema } from "hast-util-sanitize";
 import ReactMarkdown from "react-markdown";
 import rehypePrism from "rehype-prism-plus";
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { CodeBlock } from "./code-block";
 
 // Extend sanitize schema to allow language classes on code/pre and safe link attrs
-const sanitizeSchema: any = {
+const sanitizeSchema: Schema = {
 	...defaultSchema,
 	attributes: {
 		...defaultSchema.attributes,
@@ -165,17 +166,12 @@ export function Markdown({ children, className }: MarkdownProps) {
 					},
 					pre: (props: any) => {
 						// Wrap the highlighted code block with our UX shell
-						// @ts-expect-error - props.children is the <code> element from react-markdown
 						const child: any = props.children;
 						const className: string | undefined = child?.props?.className;
 						const languageMatch = /language-(\w+)/.exec(className || "");
 
 						return (
-							<CodeBlock
-								language={languageMatch?.[1]}
-								// @ts-expect-error
-								{...props}
-							>
+							<CodeBlock language={languageMatch?.[1]} {...props}>
 								{props.children}
 							</CodeBlock>
 						);

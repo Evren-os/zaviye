@@ -9,7 +9,7 @@ import type { ModelId } from "@/lib/types";
 /**
  * Hook for managing rate limiting state and logic
  */
-export function useRateLimit(_chatType: string) {
+export function useRateLimit() {
 	const [requestTimestamps, setRequestTimestamps] = useState<
 		Record<string, number[]>
 	>({});

@@ -54,6 +54,10 @@
   "css": {
     "linter": {
       "enabled": false
+    },
+    "parser": {
+      "cssModules": false,
+      "tailwindDirectives": true
     }
   }
 }

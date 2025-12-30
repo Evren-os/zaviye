@@ -25,6 +25,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DEFAULT_MODEL_ID } from "@/lib/constants/rate-limits";
 import { getModelById, MODELS } from "@/lib/models";
 import type { ModelId, Persona } from "@/lib/types";
 
@@ -67,8 +68,7 @@ const PersonaListComponent = React.memo(function PersonaList({
 					<CommandGroup heading="Personas">
 						{personas.map((persona) => {
 							const Icon = persona.icon;
-							const effectiveModelId =
-								persona.model || "gemini-3-flash-preview"; // Default for display
+							const effectiveModelId = persona.model || DEFAULT_MODEL_ID;
 							const model = getModelById(effectiveModelId);
 							const isOverride = !!persona.model;
 
@@ -93,7 +93,7 @@ const PersonaListComponent = React.memo(function PersonaList({
 													>
 														{isOverride
 															? model?.name
-															: `Default: ${getModelById("gemini-3-flash-preview")?.name}`}
+															: `Default: ${getModelById(DEFAULT_MODEL_ID)?.name}`}
 													</Badge>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent

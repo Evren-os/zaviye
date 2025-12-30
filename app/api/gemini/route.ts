@@ -9,15 +9,23 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 15;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+let cleanupInterval: NodeJS.Timeout | null = null;
+
 // Periodically clean up old entries from the rate limit store
-setInterval(() => {
-	const now = Date.now();
-	for (const [ip, record] of rateLimitStore.entries()) {
-		if (now - record.lastRequest > RATE_LIMIT_WINDOW_MS) {
-			rateLimitStore.delete(ip);
-		}
+// Note: In serverless environments, this interval may not persist between requests
+// Cleanup is also performed lazily during request processing
+function startCleanup(): void {
+	if (!cleanupInterval) {
+		cleanupInterval = setInterval(() => {
+			const now = Date.now();
+			for (const [ip, record] of rateLimitStore.entries()) {
+				if (now - record.lastRequest > RATE_LIMIT_WINDOW_MS) {
+					rateLimitStore.delete(ip);
+				}
+			}
+		}, CLEANUP_INTERVAL_MS);
 	}
-}, CLEANUP_INTERVAL_MS);
+}
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const DEFAULT_MODEL_NAME = "gemini-3-flash-preview";
@@ -42,6 +50,9 @@ interface GeminiApiResponse {
 }
 
 export async function POST(request: NextRequest) {
+	// Ensure cleanup is running
+	startCleanup();
+
 	const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
 	const now = Date.now();
 
@@ -59,6 +70,14 @@ export async function POST(request: NextRequest) {
 		}
 		rateLimitStore.set(ip, { count: record.count + 1, lastRequest: now });
 	} else {
+		// Lazy cleanup: remove stale entries when checking rate limit
+		const oneMinuteAgo = now - RATE_LIMIT_WINDOW_MS;
+		for (const [key, record] of rateLimitStore.entries()) {
+			if (record.lastRequest < oneMinuteAgo) {
+				rateLimitStore.delete(key);
+			}
+		}
+
 		// Start a new record for the IP or reset the window
 		rateLimitStore.set(ip, { count: 1, lastRequest: now });
 	}
@@ -74,6 +93,28 @@ export async function POST(request: NextRequest) {
 	try {
 		const { systemPrompt, userPrompt, modelName }: GeminiRequestBody =
 			await request.json();
+
+		// Validate required fields
+		if (!systemPrompt || typeof systemPrompt !== "string") {
+			return NextResponse.json(
+				{ error: "systemPrompt is required and must be a string" },
+				{ status: 400 },
+			);
+		}
+
+		if (!userPrompt || typeof userPrompt !== "string") {
+			return NextResponse.json(
+				{ error: "userPrompt is required and must be a string" },
+				{ status: 400 },
+			);
+		}
+
+		if (userPrompt.trim().length === 0) {
+			return NextResponse.json(
+				{ error: "userPrompt cannot be empty" },
+				{ status: 400 },
+			);
+		}
 
 		const effectiveModelName = modelName || DEFAULT_MODEL_NAME;
 		const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${effectiveModelName}:generateContent?key=${API_KEY}`;
