@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
 	clearChatHistory as clearChatHistoryService,
 	getChatMessages,
@@ -25,12 +26,34 @@ export function useChatStorage(chatType: string) {
 
 	// Save messages to storage whenever they change
 	useEffect(() => {
-		saveChatMessages(chatType, messages);
+		try {
+			saveChatMessages(chatType, messages);
+		} catch (error) {
+			console.error("Failed to save chat messages:", error);
+			const isQuotaError =
+				error instanceof Error && error.message.toLowerCase().includes("quota");
+			if (isQuotaError) {
+				toast.error("Storage full", {
+					description: "Please clear old data from settings.",
+				});
+			}
+		}
 	}, [messages, chatType]);
 
 	// Save chat started flag whenever it changes
 	useEffect(() => {
-		markChatStarted(chatType, hasStartedChat);
+		try {
+			markChatStarted(chatType, hasStartedChat);
+		} catch (error) {
+			console.error("Failed to mark chat started:", error);
+			const isQuotaError =
+				error instanceof Error && error.message.toLowerCase().includes("quota");
+			if (isQuotaError) {
+				toast.error("Storage full", {
+					description: "Please clear old data from settings.",
+				});
+			}
+		}
 	}, [hasStartedChat, chatType]);
 
 	const clearHistory = () => {

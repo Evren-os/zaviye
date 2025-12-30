@@ -58,18 +58,16 @@ const IntroScreen = ({
 							Examples
 						</h4>
 						<div className="flex flex-col text-left">
-							{persona.demoPrompts
-								?.slice(0, 3)
-								.map((prompt: string, i: number) => (
-									<button
-										key={i}
-										type="button"
-										onClick={() => onSendDemoPrompt(prompt)}
-										className="group w-full text-left px-0 py-2.5 min-h-11 text-[0.95rem] text-muted-foreground hover:text-foreground transition-colors duration-150 border-b border-border/50 last:border-b-0"
-									>
-										{prompt}
-									</button>
-								))}
+							{persona.demoPrompts?.slice(0, 3).map((prompt: string) => (
+								<button
+									key={prompt}
+									type="button"
+									onClick={() => onSendDemoPrompt(prompt)}
+									className="group w-full text-left px-0 py-2.5 min-h-11 text-[0.95rem] text-muted-foreground hover:text-foreground transition-colors duration-150 border-b border-border/50 last:border-b-0"
+								>
+									{prompt}
+								</button>
+							))}
 						</div>
 					</div>
 				)}

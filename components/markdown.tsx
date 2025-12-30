@@ -1,6 +1,14 @@
 "use client";
 
 import type { Schema } from "hast-util-sanitize";
+import type { ReactNode } from "react";
+import type {
+	AnchorHTMLAttributes,
+	HTMLAttributes,
+	TableHTMLAttributes,
+	ThHTMLAttributes,
+	TdHTMLAttributes,
+} from "react";
 import { defaultSchema } from "hast-util-sanitize";
 import ReactMarkdown from "react-markdown";
 import rehypePrism from "rehype-prism-plus";
@@ -31,6 +39,10 @@ interface MarkdownProps {
 	className?: string;
 }
 
+interface CodeProps extends HTMLAttributes<HTMLElement> {
+	inline?: boolean;
+}
+
 export function Markdown({ children, className }: MarkdownProps) {
 	return (
 		<div className={cn("markdown text-sm leading-relaxed", className)}>
@@ -38,7 +50,7 @@ export function Markdown({ children, className }: MarkdownProps) {
 				remarkPlugins={[remarkGfm]}
 				rehypePlugins={[[rehypeSanitize, sanitizeSchema], rehypePrism]}
 				components={{
-					a: (props: any) => (
+					a: (props: AnchorHTMLAttributes<HTMLAnchorElement>) => (
 						<a
 							{...props}
 							target="_blank"
@@ -46,108 +58,99 @@ export function Markdown({ children, className }: MarkdownProps) {
 							className="underline underline-offset-2 text-primary hover:opacity-90"
 						/>
 					),
-					h1: (props: any) => (
+					h1: (props: HTMLAttributes<HTMLHeadingElement>) => (
 						<h1
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"mt-3 mb-2 text-base font-semibold",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					h2: (props: any) => (
+					h2: (props: HTMLAttributes<HTMLHeadingElement>) => (
 						<h2
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"mt-3 mb-1.5 text-[0.95rem] font-semibold",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					h3: (props: any) => (
+					h3: (props: HTMLAttributes<HTMLHeadingElement>) => (
 						<h3
-							{...(props as any)}
-							className={cn(
-								"mt-2.5 mb-1 text-sm font-medium",
-								(props as any).className,
-							)}
+							{...props}
+							className={cn("mt-2.5 mb-1 text-sm font-medium", props.className)}
 						/>
 					),
-					p: (props: any) => (
-						<p
-							{...(props as any)}
-							className={cn("my-2", (props as any).className)}
-						/>
+					p: (props: HTMLAttributes<HTMLParagraphElement>) => (
+						<p {...props} className={cn("my-2", props.className)} />
 					),
-					ul: (props: any) => (
+					ul: (props: HTMLAttributes<HTMLUListElement>) => (
 						<ul
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"my-2 list-disc pl-5 marker:text-muted-foreground",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					ol: (props: any) => (
+					ol: (props: HTMLAttributes<HTMLOListElement>) => (
 						<ol
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"my-2 list-decimal pl-5 marker:text-muted-foreground",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					li: (props: any) => (
-						<li
-							{...(props as any)}
-							className={cn("my-0.5", (props as any).className)}
-						/>
+					li: (props: HTMLAttributes<HTMLLIElement>) => (
+						<li {...props} className={cn("my-0.5", props.className)} />
 					),
-					blockquote: (props: any) => (
+					blockquote: (props: HTMLAttributes<HTMLQuoteElement>) => (
 						<blockquote
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"my-3 border-l-2 border-border/70 pl-3",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					table: (props: any) => (
+					table: (props: TableHTMLAttributes<HTMLTableElement>) => (
 						<div className="my-3 w-full overflow-x-auto">
 							<table
-								{...(props as any)}
+								{...props}
 								className={cn(
 									"w-full text-left text-sm border-collapse",
-									(props as any).className,
+									props.className,
 								)}
 							/>
 						</div>
 					),
-					th: (props: any) => (
+					th: (props: ThHTMLAttributes<HTMLTableCellElement>) => (
 						<th
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"border bg-muted/60 px-3 py-2 font-medium text-foreground",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					td: (props: any) => (
+					td: (props: TdHTMLAttributes<HTMLTableCellElement>) => (
 						<td
-							{...(props as any)}
+							{...props}
 							className={cn(
 								"border px-3 py-2 text-foreground/90",
-								(props as any).className,
+								props.className,
 							)}
 						/>
 					),
-					code: (props: any) => {
-						const { inline, className, children, ...rest } = props as any;
+					code: (props: CodeProps) => {
+						const { inline, className, children, ...rest } = props;
 						const _languageMatch = /language-(\w+)/.exec(className || "");
 						if (inline) {
 							return (
 								<code
-									{...(rest as any)}
+									{...rest}
 									className={cn(
 										"rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em]",
 										className,
@@ -157,17 +160,19 @@ export function Markdown({ children, className }: MarkdownProps) {
 								</code>
 							);
 						}
-						// Block code: delegate to CodeBlock wrapper so we can add copy and collapse UX
 						return (
-							<code {...(rest as any)} className={className}>
+							<code {...rest} className={className}>
 								{children}
 							</code>
 						);
 					},
-					pre: (props: any) => {
-						// Wrap the highlighted code block with our UX shell
-						const child: any = props.children;
-						const className: string | undefined = child?.props?.className;
+					pre: (
+						props: HTMLAttributes<HTMLPreElement> & { children?: ReactNode },
+					) => {
+						const child = props.children as
+							| { props?: { className?: string } }
+							| undefined;
+						const className = child?.props?.className;
 						const languageMatch = /language-(\w+)/.exec(className || "");
 
 						return (

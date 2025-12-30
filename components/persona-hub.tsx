@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePersonaHub } from "@/hooks/use-persona-hub";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "./error-boundary";
 import { PersonaActions } from "./persona-actions";
 import { PersonaEditor } from "./persona-editor";
 import { PersonaList } from "./persona-list";
@@ -66,23 +67,24 @@ export function PersonaHub({
 						}}
 					>
 						<DialogTitle className="sr-only">Persona Hub</DialogTitle>
-						{view === "list" ? (
-							<PersonaList
-								personas={personas}
-								onSelect={handleSelect}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onCreate={handleCreate}
-								activeChatId={activeChatId}
-								onUpdatePersonaModel={handleUpdatePersonaModel}
-							/>
-						) : (
-							<PersonaEditor
-								persona={editingPersona}
-								onSave={handleSave}
-								onBack={handleBack}
-							/>
-						)}
+						<ErrorBoundary>
+							{view === "list" ? (
+								<PersonaList
+									personas={personas}
+									onSelect={handleSelect}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onCreate={handleCreate}
+									onUpdatePersonaModel={handleUpdatePersonaModel}
+								/>
+							) : (
+								<PersonaEditor
+									persona={editingPersona}
+									onSave={handleSave}
+									onBack={handleBack}
+								/>
+							)}
+						</ErrorBoundary>
 					</DialogContent>
 				</Dialog>
 			</TooltipProvider>

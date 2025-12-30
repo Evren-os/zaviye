@@ -35,7 +35,6 @@ interface PersonaListProps {
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
 	onCreate: () => void;
-	activeChatId: string;
 	onUpdatePersonaModel: (id: string, model: ModelId | undefined) => void;
 }
 
@@ -45,7 +44,6 @@ const PersonaListComponent = React.memo(function PersonaList({
 	onEdit,
 	onDelete,
 	onCreate,
-	activeChatId,
 	onUpdatePersonaModel,
 }: PersonaListProps) {
 	return (

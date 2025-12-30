@@ -37,7 +37,23 @@ export function CodeBlock({ language, children }: CodeBlockProps) {
 	const handleCopy = async () => {
 		try {
 			const text = preRef.current?.innerText ?? "";
-			await navigator.clipboard.writeText(text);
+
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				await navigator.clipboard.writeText(text);
+			} else {
+				const textarea = document.createElement("textarea");
+				textarea.value = text;
+				textarea.style.position = "fixed";
+				textarea.style.left = "-999999px";
+				document.body.appendChild(textarea);
+				textarea.select();
+				const successful = document.execCommand("copy");
+				document.body.removeChild(textarea);
+				if (!successful) {
+					throw new Error("execCommand copy failed");
+				}
+			}
+
 			toast.success("Code copied to clipboard", { duration: 1500 });
 			setIsCopied(true);
 			setTimeout(() => setIsCopied(false), 1800);
@@ -91,7 +107,7 @@ export function CodeBlock({ language, children }: CodeBlockProps) {
 				>
 					<pre
 						ref={preRef}
-						className="overflow-x-auto p-3 pt-10 md:p-4 md:pt-12"
+						className="whitespace-pre-wrap overflow-x-auto p-3 pt-10 md:p-4 md:pt-12"
 					>
 						{children}
 					</pre>

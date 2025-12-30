@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -25,11 +25,6 @@
       "suspicious": {
         "noExplicitAny": "warn",
         "noArrayIndexKey": "warn"
-      },
-      "a11y": {
-        "useKeyWithClickEvents": "off",
-        "useSemanticElements": "off",
-        "useFocusableInteractive": "off"
       }
     }
   },

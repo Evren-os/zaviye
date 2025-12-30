@@ -7,25 +7,11 @@ const rateLimitStore = new Map<
 >();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 15;
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-let cleanupInterval: NodeJS.Timeout | null = null;
-
-// Periodically clean up old entries from the rate limit store
-// Note: In serverless environments, this interval may not persist between requests
-// Cleanup is also performed lazily during request processing
-function startCleanup(): void {
-	if (!cleanupInterval) {
-		cleanupInterval = setInterval(() => {
-			const now = Date.now();
-			for (const [ip, record] of rateLimitStore.entries()) {
-				if (now - record.lastRequest > RATE_LIMIT_WINDOW_MS) {
-					rateLimitStore.delete(ip);
-				}
-			}
-		}, CLEANUP_INTERVAL_MS);
-	}
-}
+// NOTE: Rate limiting is per-instance and doesn't persist across serverless instances.
+// For production deployments with multiple serverless instances, use Redis or Vercel KV
+// for distributed rate limiting to ensure consistent limits across all instances.
+// Lazy cleanup (below) prevents unbounded memory growth in single-instance scenarios.
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const DEFAULT_MODEL_NAME = "gemini-3-flash-preview";
@@ -50,9 +36,6 @@ interface GeminiApiResponse {
 }
 
 export async function POST(request: NextRequest) {
-	// Ensure cleanup is running
-	startCleanup();
-
 	const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
 	const now = Date.now();
 
@@ -134,7 +117,6 @@ export async function POST(request: NextRequest) {
 				topK: 40,
 				topP: 0.95,
 				maxOutputTokens: 65536,
-				thinkingLevel: "high",
 			},
 			safetySettings: [
 				{ category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -151,13 +133,25 @@ export async function POST(request: NextRequest) {
 			],
 		};
 
-		const response = await fetch(API_URL, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(requestBody),
-		});
+		const timeoutMs = 60000; // 60 seconds
+		const timeoutController = new AbortController();
+		const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+
+		let response: Response;
+		try {
+			response = await fetch(API_URL, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(requestBody),
+				signal: timeoutController.signal,
+			});
+		} catch (error) {
+			clearTimeout(timeoutId);
+			throw error;
+		}
+		clearTimeout(timeoutId);
 
 		if (!response.ok) {
 			const errorBody = await response

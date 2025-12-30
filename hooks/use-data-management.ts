@@ -63,10 +63,18 @@ export function useDataManagement() {
 			});
 		} catch (error) {
 			console.error("Import failed:", error);
-			toast.error("Import Failed", {
-				description:
-					error instanceof Error ? error.message : "Could not import data.",
-			});
+			const isQuotaError =
+				error instanceof Error && error.message.toLowerCase().includes("quota");
+			if (isQuotaError) {
+				toast.error("Storage full", {
+					description: "Please clear old data from settings.",
+				});
+			} else {
+				toast.error("Import Failed", {
+					description:
+						error instanceof Error ? error.message : "Could not import data.",
+				});
+			}
 		}
 	}, []);
 
@@ -122,7 +130,16 @@ export function useDataManagement() {
 				});
 			} catch (error) {
 				console.error("Merge personas failed:", error);
-				toast.error("Import failed");
+				const isQuotaError =
+					error instanceof Error &&
+					error.message.toLowerCase().includes("quota");
+				if (isQuotaError) {
+					toast.error("Storage full", {
+						description: "Please clear old data from settings.",
+					});
+				} else {
+					toast.error("Import failed");
+				}
 			}
 		},
 		[importCustomPersonas],

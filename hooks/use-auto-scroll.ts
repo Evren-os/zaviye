@@ -5,16 +5,10 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type { ChatType, Message } from "@/lib/types";
-
-interface UseAutoScrollProps {
-	messages: Message[];
-	activeChat: ChatType;
-}
 
 const SCROLL_THRESHOLD = 150;
 
-export function useAutoScroll({ messages, activeChat }: UseAutoScrollProps) {
+export function useAutoScroll() {
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
 	const [isAtBottom, setIsAtBottom] = useState(true);
 	const isAtBottomRef = useRef(isAtBottom);

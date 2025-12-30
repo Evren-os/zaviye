@@ -15,46 +15,60 @@ export async function generateContent({
 }: GenerateContentParams): Promise<string> {
 	const maxRetries = 3;
 	const retryDelay = 1000; // 1 second
+	const timeoutMs = 60000; // 60 seconds
 
 	for (let attempt = 1; attempt <= maxRetries; attempt++) {
 		try {
-			const response = await fetch("/api/gemini", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ systemPrompt, userPrompt, modelName }),
-				signal, // Pass the signal to the fetch request
-			});
+			const timeoutController = new AbortController();
+			const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				const errorMessage =
-					errorData.error || `API Error: Status ${response.status}`;
+			const abortSignal = signal
+				? AbortSignal.any([signal, timeoutController.signal])
+				: timeoutController.signal;
 
-				if (response.status === 429) {
-					throw new Error(
-						"API rate limit hit. Try a different model or wait a moment.",
-					);
+			try {
+				const response = await fetch("/api/gemini", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ systemPrompt, userPrompt, modelName }),
+					signal: abortSignal,
+				});
+				clearTimeout(timeoutId);
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}));
+					const errorMessage =
+						errorData.error || `API Error: Status ${response.status}`;
+
+					if (response.status === 429) {
+						throw new Error(
+							"API rate limit hit. Try a different model or wait a moment.",
+						);
+					}
+					if (response.status >= 500 && attempt < maxRetries) {
+						// Retry on server errors
+						await new Promise((resolve) =>
+							setTimeout(resolve, retryDelay * attempt),
+						);
+						continue;
+					}
+
+					throw new Error(errorMessage);
 				}
-				if (response.status >= 500 && attempt < maxRetries) {
-					// Retry on server errors
-					await new Promise((resolve) =>
-						setTimeout(resolve, retryDelay * attempt),
-					);
-					continue;
+
+				const data = await response.json();
+
+				if (!data.text) {
+					throw new Error("No text content received from API");
 				}
 
-				throw new Error(errorMessage);
+				return data.text;
+			} catch (error) {
+				clearTimeout(timeoutId);
+				throw error;
 			}
-
-			const data = await response.json();
-
-			if (!data.text) {
-				throw new Error("No text content received from API");
-			}
-
-			return data.text;
 		} catch (error) {
 			if (error instanceof Error && error.name === "AbortError") {
 				// Re-throw the abort error so it can be caught and handled upstream

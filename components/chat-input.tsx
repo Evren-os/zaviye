@@ -2,7 +2,7 @@
 
 import { ChevronDown, SendIcon, SquareIcon, TimerIcon } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -48,6 +48,7 @@ export function ChatInput({
 	const isThrottled = throttleSeconds > 0;
 	const isMounted = useMounted();
 	const isMobile = useIsMobile();
+	const id = useId();
 	const { min, max } = getTextareaHeight(isMobile && isMounted);
 
 	// Reset input when chat type changes
@@ -95,7 +96,7 @@ export function ChatInput({
 					<div className="relative p-4">
 						<Textarea
 							ref={textareaRef}
-							id="zaviye-chat-input"
+							id={id}
 							value={input}
 							onChange={(e) => setInput(e.target.value)}
 							onKeyDown={handleKeyDown}

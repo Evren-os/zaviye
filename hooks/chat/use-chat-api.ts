@@ -23,7 +23,7 @@ export function useChatApi() {
 			modelName: ModelId,
 			persona: Persona,
 		): Promise<Message> => {
-			if (isLoading) stopGeneration();
+			if (abortControllerRef.current) stopGeneration();
 			setIsLoading(true);
 			abortControllerRef.current = new AbortController();
 
@@ -43,7 +43,7 @@ export function useChatApi() {
 				abortControllerRef.current = null;
 			}
 		},
-		[isLoading, stopGeneration],
+		[stopGeneration],
 	);
 
 	return {

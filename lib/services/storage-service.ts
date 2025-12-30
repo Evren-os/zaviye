@@ -40,6 +40,14 @@ function safeSet(key: string, value: unknown): void {
 	try {
 		localStorage.setItem(key, JSON.stringify(value));
 	} catch (error) {
+		if (
+			error instanceof DOMException &&
+			(error.name === "QuotaExceededError" || error.code === 22)
+		) {
+			throw new Error(
+				"Storage quota exceeded. Please clear some old data to continue.",
+			);
+		}
 		console.error(`Failed to set ${key} in localStorage:`, error);
 	}
 }

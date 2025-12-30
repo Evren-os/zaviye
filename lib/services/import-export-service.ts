@@ -1,6 +1,11 @@
-import { STORAGE_KEYS } from "@/lib/constants/storage-keys";
 import { exportPersonas } from "@/lib/services/persona-service";
-import { storageUtils } from "@/lib/services/storage-service";
+import {
+	chatMessagesStorage,
+	chatStartedStorage,
+	modelStorage,
+	personasStorage,
+	storageUtils,
+} from "@/lib/services/storage-service";
 import type { Message, ModelId, Persona } from "@/lib/types";
 
 /**
@@ -25,14 +30,9 @@ export function exportAllData(
 	const histories: Record<string, Message[]> = {};
 
 	allPersonas.forEach((persona) => {
-		const historyKey = STORAGE_KEYS.chatMessages(persona.id);
-		const history = localStorage.getItem(historyKey);
-		if (history) {
-			try {
-				histories[persona.id] = JSON.parse(history);
-			} catch (error) {
-				console.error(`Failed to parse history for ${persona.id}:`, error);
-			}
+		const history = chatMessagesStorage.get(persona.id);
+		if (history.length > 0) {
+			histories[persona.id] = history;
 		}
 	});
 
@@ -60,20 +60,14 @@ export function importAllData(data: unknown): void {
 	const importData = data as ExportData;
 
 	if (importData.globalModel) {
-		localStorage.setItem(STORAGE_KEYS.GLOBAL_MODEL, importData.globalModel);
+		modelStorage.save(importData.globalModel);
 	}
 
-	localStorage.setItem(
-		STORAGE_KEYS.CUSTOM_PERSONAS,
-		JSON.stringify(importData.personas),
-	);
+	personasStorage.saveAll(importData.personas);
 
 	Object.entries(importData.histories).forEach(([id, history]) => {
-		localStorage.setItem(
-			STORAGE_KEYS.chatMessages(id),
-			JSON.stringify(history),
-		);
-		localStorage.setItem(STORAGE_KEYS.chatStarted(id), JSON.stringify(true));
+		chatMessagesStorage.save(id, history);
+		chatStartedStorage.save(id, true);
 	});
 }
 
