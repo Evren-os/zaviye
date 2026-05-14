@@ -93,6 +93,6 @@
     "vitest": "^4.0.16"
   },
   overrides: {
-    react-server-dom-webpack: 19.2.6
+    "react-server-dom-webpack": "19.2.6"
   }
 }
