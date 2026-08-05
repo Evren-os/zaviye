@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5
+      semver-major-days: 30
+      semver-minor-days: 10
+      semver-patch-days: 5
+    groups:
+      bun-minor-patch:
+        update-types: ["minor", "patch"]
+    labels: ["dependencies", "bun"]
+    commit-message:
+      prefix: "bun"
